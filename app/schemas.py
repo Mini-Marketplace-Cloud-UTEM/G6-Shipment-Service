@@ -67,16 +67,9 @@ class HealthResponse(BaseModel):
     version: str
     timestamp: datetime
 
-class ValidationErrorDetail(BaseModel):
-    field: Optional[str] = None
-    value: Optional[Any] = None
-    constraint: Optional[str] = None
-
-class ErrorDetail(BaseModel):
-    code: int
-    type: str
-    message: str
-    details: Optional[ValidationErrorDetail] = None
-
 class ErrorResponse(BaseModel):
-    error: ErrorDetail
+    timestamp: datetime
+    status: int
+    code: str
+    message: str
+    correlationId: str

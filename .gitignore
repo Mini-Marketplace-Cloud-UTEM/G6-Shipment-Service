@@ -22,3 +22,7 @@ env/
 *.synctex.gz
 *.fls
 *.fdb_latexmk
+
+# Databases
+*.db
+*.sqlite3

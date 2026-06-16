@@ -1,10 +1,15 @@
 from datetime import datetime, timedelta, timezone
 import uuid
 from typing import Optional
-from fastapi import FastAPI, Query, status
+
+from fastapi import FastAPI, Query, status, Depends, Request, Header
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
+from sqlalchemy.orm import Session
+
+from app.database import engine, Base, get_db
+from app.models import Shipment
 from app.schemas import (
     ShipmentCreate,
     ShipmentResponse,
@@ -14,33 +19,16 @@ from app.schemas import (
     ShipmentListItem,
     HealthResponse,
     ErrorResponse,
-    ErrorDetail,
-    ValidationErrorDetail,
     ShipmentStatus
 )
 
+# Inicializar Base de Datos (crea la tabla si no existe)
+Base.metadata.create_all(bind=engine)
+
 app = FastAPI(
     title="API de Despacho y Logística --- Grupo 6",
-    description="Servicio de mock funcional para simulación de despachos",
+    description="Servicio de gestión de despachos",
     version="1.0.0"
-)
-
-# Base de datos en memoria
-db_shipments = {}
-
-# Seeding inicial para pruebas rápidas
-initial_shipment_id = "SHP-a1b2c3d4"
-db_shipments[initial_shipment_id] = ShipmentResponse(
-    shipment_id=initial_shipment_id,
-    order_id="ORD-20260611-001",
-    customer_name="María González",
-    address="Av. Providencia 1234, Depto 56",
-    city="Santiago",
-    weight_kg=3.2,
-    status=ShipmentStatus.PENDING,
-    created_at=datetime.fromisoformat("2026-06-11T14:00:00+00:00"),
-    updated_at=datetime.fromisoformat("2026-06-11T14:00:00+00:00"),
-    estimated_delivery=datetime.fromisoformat("2026-06-14T18:00:00+00:00")
 )
 
 # Transiciones de estado permitidas
@@ -53,18 +41,18 @@ VALID_TRANSITIONS = {
     ShipmentStatus.RETURNED: set()
 }
 
+def get_correlation_id(request: Request) -> str:
+    return request.headers.get("X-Correlation-Id", "unknown")
+
 # Manejador personalizado de errores de validación
 @app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request, exc):
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
     errors = exc.errors()
     if errors:
         err = errors[0]
-        # Limpiar ruta de campo para mejor legibilidad
         field = ".".join([str(loc) for loc in err.get("loc", []) if loc != "body"])
-        input_value = err.get('input')
         err_type = err.get('type')
         
-        # Personalizar mensajes
         if err_type == 'missing':
             message = f"El campo {field} es obligatorio."
         elif err_type == 'greater_than':
@@ -75,55 +63,58 @@ async def validation_exception_handler(request, exc):
             message = f"El campo {field} debe ser menor o igual a {limit}."
         else:
             message = f"El campo {field} no es válido: {err.get('msg')}."
-        
-        detail = ValidationErrorDetail(
-            field=field,
-            value=input_value,
-            constraint=err_type
-        )
     else:
         message = "Error de validación de datos."
-        detail = None
 
     error_response = ErrorResponse(
-        error=ErrorDetail(
-            code=422,
-            type="VALIDATION_ERROR",
-            message=message,
-            details=detail
-        )
+        timestamp=datetime.now(timezone.utc),
+        status=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        code="VALIDATION_ERROR",
+        message=message,
+        correlationId=get_correlation_id(request)
     )
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content=jsonable_encoder(error_response)
     )
 
-def make_error_response(code: int, err_type: str, message: str) -> JSONResponse:
+def make_error_response(code: int, err_code: str, message: str, correlation_id: str) -> JSONResponse:
     error_response = ErrorResponse(
-        error=ErrorDetail(
-            code=code,
-            type=err_type,
-            message=message
-        )
+        timestamp=datetime.now(timezone.utc),
+        status=code,
+        code=err_code,
+        message=message,
+        correlationId=correlation_id
     )
     return JSONResponse(status_code=code, content=jsonable_encoder(error_response))
 
-@app.post("/api/v1/shipments", response_model=ShipmentResponse, status_code=status.HTTP_201_CREATED)
-async def create_shipment(shipment_data: ShipmentCreate):
+# Dependencia para validar headers
+async def verify_headers(
+    x_request_id: str = Header(..., description="Identificador único de la petición"),
+    x_correlation_id: str = Header(..., description="Identificador para trazabilidad distribuida"),
+    x_consumer: str = Header(..., description="Identifica el cliente que consume el servicio")
+):
+    pass
+
+@app.post("/api/v1/shipments", response_model=ShipmentResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(verify_headers)])
+async def create_shipment(request: Request, shipment_data: ShipmentCreate, db: Session = Depends(get_db)):
+    correlation_id = get_correlation_id(request)
+    
     # Validar duplicados de order_id
-    for s in db_shipments.values():
-        if s.order_id == shipment_data.order_id:
-            return make_error_response(
-                code=status.HTTP_409_CONFLICT,
-                err_type="CONFLICT",
-                message=f"Ya existe un despacho asociado al pedido {shipment_data.order_id}."
-            )
+    existing_shipment = db.query(Shipment).filter(Shipment.order_id == shipment_data.order_id).first()
+    if existing_shipment:
+        return make_error_response(
+            code=status.HTTP_409_CONFLICT,
+            err_code="CONFLICT",
+            message=f"Ya existe un despacho asociado al pedido {shipment_data.order_id}.",
+            correlation_id=correlation_id
+        )
             
     shipment_id = f"SHP-{uuid.uuid4().hex[:8]}"
     now = datetime.now(timezone.utc)
     estimated = now + timedelta(days=3)
     
-    shipment = ShipmentResponse(
+    new_shipment = Shipment(
         shipment_id=shipment_id,
         order_id=shipment_data.order_id,
         customer_name=shipment_data.customer_name,
@@ -136,61 +127,100 @@ async def create_shipment(shipment_data: ShipmentCreate):
         estimated_delivery=estimated
     )
     
-    db_shipments[shipment_id] = shipment
-    return shipment
+    db.add(new_shipment)
+    db.commit()
+    db.refresh(new_shipment)
+    
+    # ensure tzinfo is there for pydantic
+    if new_shipment.created_at and not new_shipment.created_at.tzinfo:
+        new_shipment.created_at = new_shipment.created_at.replace(tzinfo=timezone.utc)
+    if new_shipment.updated_at and not new_shipment.updated_at.tzinfo:
+        new_shipment.updated_at = new_shipment.updated_at.replace(tzinfo=timezone.utc)
+    if new_shipment.estimated_delivery and not new_shipment.estimated_delivery.tzinfo:
+        new_shipment.estimated_delivery = new_shipment.estimated_delivery.replace(tzinfo=timezone.utc)
 
-@app.get("/api/v1/shipments/{shipment_id}", response_model=ShipmentResponse)
-async def get_shipment_by_id(shipment_id: str):
-    if shipment_id not in db_shipments:
+    return new_shipment
+
+@app.get("/api/v1/shipments/{shipment_id}", response_model=ShipmentResponse, dependencies=[Depends(verify_headers)])
+async def get_shipment_by_id(request: Request, shipment_id: str, db: Session = Depends(get_db)):
+    correlation_id = get_correlation_id(request)
+    
+    shipment = db.query(Shipment).filter(Shipment.shipment_id == shipment_id).first()
+    if not shipment:
         return make_error_response(
             code=status.HTTP_404_NOT_FOUND,
-            err_type="NOT_FOUND",
-            message=f"No se encontró el despacho con ID {shipment_id}."
+            err_code="NOT_FOUND",
+            message=f"No se encontró el despacho con ID {shipment_id}.",
+            correlation_id=correlation_id
         )
-    return db_shipments[shipment_id]
+    
+    # ensure tzinfo is there for pydantic
+    if shipment.created_at and not shipment.created_at.tzinfo:
+        shipment.created_at = shipment.created_at.replace(tzinfo=timezone.utc)
+    if shipment.updated_at and not shipment.updated_at.tzinfo:
+        shipment.updated_at = shipment.updated_at.replace(tzinfo=timezone.utc)
+    if shipment.estimated_delivery and not shipment.estimated_delivery.tzinfo:
+        shipment.estimated_delivery = shipment.estimated_delivery.replace(tzinfo=timezone.utc)
+        
+    return shipment
 
-@app.get("/api/v1/shipments")
+@app.get("/api/v1/shipments", dependencies=[Depends(verify_headers)])
 async def get_shipments(
+    request: Request,
     order_id: Optional[str] = None,
     status_filter: Optional[ShipmentStatus] = Query(None, alias="status"),
     limit: int = 50,
-    offset: int = 0
+    offset: int = 0,
+    db: Session = Depends(get_db)
 ):
+    correlation_id = get_correlation_id(request)
+    
     # Caso 1: Buscar por Order ID (retorna objeto único o 404)
     if order_id:
-        for s in db_shipments.values():
-            if s.order_id == order_id:
-                return {
-                    "shipment_id": s.shipment_id,
-                    "order_id": s.order_id,
-                    "status": s.status,
-                    "created_at": s.created_at,
-                    "estimated_delivery": s.estimated_delivery
-                }
+        s = db.query(Shipment).filter(Shipment.order_id == order_id).first()
+        if s:
+            if s.created_at and not s.created_at.tzinfo:
+                s.created_at = s.created_at.replace(tzinfo=timezone.utc)
+            if s.estimated_delivery and not s.estimated_delivery.tzinfo:
+                s.estimated_delivery = s.estimated_delivery.replace(tzinfo=timezone.utc)
+                
+            return {
+                "shipment_id": s.shipment_id,
+                "order_id": s.order_id,
+                "status": s.status,
+                "created_at": s.created_at,
+                "estimated_delivery": s.estimated_delivery
+            }
         return make_error_response(
             code=status.HTTP_404_NOT_FOUND,
-            err_type="NOT_FOUND",
-            message=f"No se encontró despacho para el pedido {order_id}."
+            err_code="NOT_FOUND",
+            message=f"No se encontró despacho para el pedido {order_id}.",
+            correlation_id=correlation_id
         )
         
     # Caso 2: Listar despachos con filtros y paginación
-    shipments_list = list(db_shipments.values())
+    query = db.query(Shipment)
     if status_filter:
-        shipments_list = [s for s in shipments_list if s.status == status_filter]
+        query = query.filter(Shipment.status == status_filter)
         
-    total = len(shipments_list)
-    paginated = shipments_list[offset:offset+limit]
+    total = query.count()
+    shipments = query.offset(offset).limit(limit).all()
     
-    items = [
-        ShipmentListItem(
+    items = []
+    for s in shipments:
+        if s.created_at and not s.created_at.tzinfo:
+            s.created_at = s.created_at.replace(tzinfo=timezone.utc)
+        if s.updated_at and not s.updated_at.tzinfo:
+            s.updated_at = s.updated_at.replace(tzinfo=timezone.utc)
+            
+        items.append(ShipmentListItem(
             shipment_id=s.shipment_id,
             order_id=s.order_id,
             status=s.status,
             city=s.city,
             created_at=s.created_at,
             updated_at=s.updated_at
-        ) for s in paginated
-    ]
+        ))
     
     return ShipmentListResponse(
         total=total,
@@ -199,16 +229,19 @@ async def get_shipments(
         shipments=items
     )
 
-@app.patch("/api/v1/shipments/{shipment_id}", response_model=ShipmentUpdateResponse)
-async def update_shipment_status(shipment_id: str, update_data: ShipmentUpdate):
-    if shipment_id not in db_shipments:
+@app.patch("/api/v1/shipments/{shipment_id}", response_model=ShipmentUpdateResponse, dependencies=[Depends(verify_headers)])
+async def update_shipment_status(request: Request, shipment_id: str, update_data: ShipmentUpdate, db: Session = Depends(get_db)):
+    correlation_id = get_correlation_id(request)
+    
+    shipment = db.query(Shipment).filter(Shipment.shipment_id == shipment_id).first()
+    if not shipment:
         return make_error_response(
             code=status.HTTP_404_NOT_FOUND,
-            err_type="NOT_FOUND",
-            message=f"No se encontró el despacho con ID {shipment_id}."
+            err_code="NOT_FOUND",
+            message=f"No se encontró el despacho con ID {shipment_id}.",
+            correlation_id=correlation_id
         )
         
-    shipment = db_shipments[shipment_id]
     current_status = shipment.status
     new_status = update_data.status
     
@@ -216,32 +249,44 @@ async def update_shipment_status(shipment_id: str, update_data: ShipmentUpdate):
     if current_status == new_status:
         now = datetime.now(timezone.utc)
         shipment.updated_at = now
+        db.commit()
+        db.refresh(shipment)
+        
+        if shipment.updated_at and not shipment.updated_at.tzinfo:
+            shipment.updated_at = shipment.updated_at.replace(tzinfo=timezone.utc)
+            
         return ShipmentUpdateResponse(
             shipment_id=shipment.shipment_id,
             order_id=shipment.order_id,
             status=shipment.status,
             previous_status=current_status,
-            updated_at=now
+            updated_at=shipment.updated_at
         )
         
     # Validar transición de estado
-    if new_status not in VALID_TRANSITIONS[current_status]:
+    if new_status not in VALID_TRANSITIONS.get(current_status, set()):
         return make_error_response(
             code=status.HTTP_409_CONFLICT,
-            err_type="CONFLICT",
-            message=f"Transición de estado no permitida: {current_status} -> {new_status}."
+            err_code="CONFLICT",
+            message=f"Transición de estado no permitida: {current_status} -> {new_status}.",
+            correlation_id=correlation_id
         )
         
     now = datetime.now(timezone.utc)
     shipment.status = new_status
     shipment.updated_at = now
+    db.commit()
+    db.refresh(shipment)
+    
+    if shipment.updated_at and not shipment.updated_at.tzinfo:
+        shipment.updated_at = shipment.updated_at.replace(tzinfo=timezone.utc)
     
     return ShipmentUpdateResponse(
         shipment_id=shipment.shipment_id,
         order_id=shipment.order_id,
         status=shipment.status,
         previous_status=current_status,
-        updated_at=now
+        updated_at=shipment.updated_at
     )
 
 @app.get("/api/v1/health", response_model=HealthResponse)
