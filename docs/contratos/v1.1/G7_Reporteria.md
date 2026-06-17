@@ -1,7 +1,10 @@
-# Contrato de Integración - Grupo 7 (Reportería)
+# Contrato de Integración - Grupo 7 (Reportería y Métricas)
 
 ## Objetivo
 Ingesta de nuevas dimensiones analíticas logísticas.
 
-## Impacto
-Al independizar los despachos a nivel de caja física, la tabla `shipments` y los eventos del Broker ahora cuentan con la dimensión `origin_cd` (Norte, Centro, Sur). Esto permite generar reportes de SLA (tiempos de entrega), métricas de éxito y tasas de fallo segmentadas por Centro de Distribución y por paquete individual, superando la limitación de medir únicamente el estado general de la orden de compra.
+## Impacto y Análisis de Datos
+Al independizar los despachos a nivel de caja física, la tabla `shipments` y los eventos del Broker ahora cuentan con la dimensión `origin_cd` (Norte, Centro, Sur).
+
+* **Analytics a Nivel de Caja:** Su ingesta de datos ahora permite Analytics a nivel de Caja (`shipment_id`) en lugar de únicamente a nivel de orden.
+* **KPIs:** Utilizarán la dimensión `origin_cd` para generar KPIs de SLAs de tiempo de entrega separados por Centro de Distribución. Esto supera la limitación de medir únicamente el estado general de la orden de compra.

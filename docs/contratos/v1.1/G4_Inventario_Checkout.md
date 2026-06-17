@@ -3,22 +3,30 @@
 ## Objetivo
 Integración para cotizar tarifas volumétricas y multi-origen antes de procesar el pago.
 
-## Acción
-Consumir el nuevo endpoint `POST /api/v1/shipments/quotes`.
+## Responsabilidades
+* Son los responsables de mapear qué producto sale de qué Centro de Distribución (CD).
+* Deben consumir el nuevo endpoint `POST /api/v1/shipments/quotes` enviando las dimensiones exactas y orígenes.
 
-## Requisito
-Una vez identificado el Centro de Distribución (CD) de cada ítem del carrito, deben enviarnos las dimensiones exactas.
+## Flujo
+1. Agrupar ítems por origen.
+2. Calcular dimensiones consolidadas por caja a despachar.
+3. Llamar a nuestra API de cotización.
+4. Recibir nuestro `total_shipping_cost` y sumarlo al ticket final del cliente.
 
-## Payload esperado (Entrada)
+## Payload esperado (Entrada para `/quotes`)
 ```json
 {
   "city": "Santiago",
-  "address": "Av. Providencia 1234",
   "packages": [
     {
       "origin_cd": "NORTE",
-      "weight_kg": 2.5,
+      "weight_kg": 2.0,
       "dimensions_cm": { "length": 40, "width": 30, "height": 20 }
+    },
+    {
+      "origin_cd": "CENTRO",
+      "weight_kg": 1.0,
+      "dimensions_cm": { "length": 15, "width": 10, "height": 5 }
     }
   ]
 }
@@ -27,8 +35,7 @@ Una vez identificado el Centro de Distribución (CD) de cada ítem del carrito, 
 ## Respuesta de G6
 ```json
 {
-  "total_shipping_cost": 6600,
+  "total_shipping_cost": 10100,
   "currency": "CLP"
 }
 ```
-Este valor debe sumarse al total del checkout.
