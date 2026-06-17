@@ -1,19 +1,38 @@
-# Contrato de Integración - Grupo 4 (Inventario y Checkout)
+# Contrato de Integración API G6 - Grupo 4 (Inventario y Checkout)
 
-## Objetivo
-Integración para cotizar tarifas volumétricas y multi-origen antes de procesar el pago.
+Este documento extrae y detalla exclusivamente los puntos de integración que el Grupo 4 debe implementar con el Grupo 6 (Despacho).
 
-## Responsabilidades
-* Son los responsables de mapear qué producto sale de qué Centro de Distribución (CD).
-* Deben consumir el nuevo endpoint `POST /api/v1/shipments/quotes` enviando las dimensiones exactas y orígenes.
+## Headers Requeridos
+Todos los endpoints exigen los siguientes headers:
+- `X-Request-Id`: UUID único de la petición.
+- `X-Correlation-Id`: UUID para trazabilidad distribuida.
+- `X-Consumer`: Nombre de su servicio (ej: `g4-checkout`, `g1-frontend`).
 
-## Flujo
-1. Agrupar ítems por origen.
-2. Calcular dimensiones consolidadas por caja a despachar.
-3. Llamar a nuestra API de cotización.
-4. Recibir nuestro `total_shipping_cost` y sumarlo al ticket final del cliente.
+## Errores Estándar
+Todos los errores devuelven un JSON base:
+```json
+{
+  "timestamp": "2026-06-11T14:05:00Z",
+  "status": 422,
+  "code": "VALIDATION_ERROR",
+  "message": "Mensaje de error...",
+  "correlationId": "req-123e4567"
+}
+```
 
-## Payload esperado (Entrada para `/quotes`)
+
+## 1. Responsabilidades
+* G4 es responsable de mapear qué producto sale de qué Centro de Distribución (CD).
+* Durante el Checkout, antes de cobrar al cliente, deben cotizar las tarifas volumétricas y multi-origen en nuestro sistema.
+
+## 2. Endpoints Disponibles para G4
+
+### 2.1 Cotizar Envío (Tarifa Consolidada)
+- **Ruta:** `POST /api/v1/shipments/quotes`
+- **Descripción:** Calcula la tarifa consolidada de un conjunto de paquetes basado en orígenes y dimensiones. **No guarda datos en la base de datos de G6.**
+
+**Request Body (JSON):**
+Deben enviar los ítems agrupados por caja física.
 ```json
 {
   "city": "Santiago",
@@ -32,7 +51,8 @@ Integración para cotizar tarifas volumétricas y multi-origen antes de procesar
 }
 ```
 
-## Respuesta de G6
+**Respuesta Exitosa (200 OK):**
+Recibirán el costo total que deben sumar al ticket final del cliente.
 ```json
 {
   "total_shipping_cost": 10100,

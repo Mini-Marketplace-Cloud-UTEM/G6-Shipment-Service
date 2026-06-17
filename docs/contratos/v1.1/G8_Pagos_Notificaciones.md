@@ -1,18 +1,54 @@
-# Contrato de Integración - Grupo 8 (Pagos y Notificaciones)
+# Contrato de Integración API G6 - Grupo 8 (Pagos y Notificaciones)
 
-## Objetivo
-Ajuste de plantillas de correo electrónico y alertas para notificar entregas parciales a los clientes.
+Este documento detalla la integración asíncrona que el Grupo 8 debe implementar para recibir notificaciones de estado de despachos desde el Grupo 6.
 
-## Acción y Responsabilidad
-* Deben consumir los eventos del broker (Pub/Sub en el tópico `shipment-events`).
-* Procesar los nuevos campos en el payload JSON.
+La integración no se hace mediante llamadas REST al G6. G8 actúa como **consumidor** de nuestros eventos.
 
-## Nuevos campos en el JSON
-- `package_index` (int): Índice del paquete entregado/enviado.
-- `total_packages` (int): Total de paquetes asociados a la orden.
+## 1. Conexión y Suscripción
+G8 debe suscribirse al tópico global Kafka/Supabase denominado `shipment-events`. 
 
-## Impacto
-Al detectar un evento donde `package_index < total_packages`, deben despachar plantillas de correo **dinámicas** de "Entrega Parcial". 
+## 2. Esquema de Datos y Eventos
 
-**Ejemplo de notificación al usuario final:**
-> *"Caja 1 de 2 entregada, tu pedido sigue en camino."*
+## Estructura del Envelope de Eventos
+Todos los eventos tienen esta estructura. Se emiten asíncronamente en el tópico global `shipment-events`.
+
+```json
+{
+  "eventId": "evt-uuid-...",
+  "eventType": "ShipmentDelivered",
+  "version": "1.0",
+  "occurredAt": "2026-06-11T15:00:00Z",
+  "producer": "g6-despacho",
+  "correlationId": "req-123",
+  "payload": {
+    "package_index": 1,
+    "total_packages": 2,
+    "shipment_id": "SHP-1",
+    "order_id": "ORD-123",
+    "new_status": "DELIVERED"
+  }
+}
+```
+
+### Catálogo de Eventos Publicados por G6
+* `ShipmentCreated`: Cuando G5 registra las cajas.
+* `ShipmentInTransit`: Cuando la caja física sale de nuestro Centro de Distribución.
+* `ShipmentDelivered`: Cuando el courier marca la caja como entregada exitosamente al cliente.
+* `ShipmentCancelled`: Cuando se aborta el despacho (generalmente a petición de G5 antes del tránsito).
+* `ShipmentFailed`: Cuando hubo un siniestro o no se encontró la dirección de entrega de la caja.
+* `ShipmentReturned`: Cuando la caja fallida es devuelta físicamente al CD de origen.
+
+
+## 3. Lógica para Entregas Parciales (Notificaciones al Cliente)
+
+Dado que G6 maneja la logística por cajas independientes físicas, G8 es el responsable de informar adecuadamente al usuario si ha recibido una parte o el total de su pedido.
+
+**¿Cómo identificar Entregas Parciales?**
+Cada evento que afecte el estado físico de una caja trae en su `payload` dos variables críticas:
+- `package_index`
+- `total_packages`
+
+**Regla de Negocio en G8:**
+Al recibir un evento `ShipmentDelivered` (o análogos):
+1. Si `package_index < total_packages`: G8 dispara una plantilla de email dinámica **"Entrega Parcial"**. Ejemplo: *"Tu caja 1 de 2 ha sido entregada. ¡El resto sigue en camino!"*
+2. Si `package_index == total_packages`: G8 evalúa que la orden está completa y envía la plantilla final **"Pedido Completado"**.
