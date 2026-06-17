@@ -291,18 +291,30 @@ Estados almacenados en la tabla \texttt{shipments}.
     font=\small\bfseries, text=danger},
   arrow/.style={-{Stealth[length=3mm]}, thick, primary!70},
   errarrow/.style={-{Stealth[length=3mm]}, thick, danger!70, dashed},
+  startend/.style={circle, fill=black, inner sep=2pt}
 ]
-  \node[state]                     (pending)   {PENDING};
+  \node[startend]                  (start)     {};
+  \node[state, right=1.2cm of start] (pending)   {PENDING};
   \node[state, right=1.2cm of pending]   (transit)   {IN\_TRANSIT};
   \node[state, right=1.2cm of transit]   (delivered) {DELIVERED};
   \node[error, below=1.2cm of pending]   (cancelled) {CANCELLED};
   \node[error, below=1.2cm of transit]   (failed)    {FAILED};
   \node[error, below=1.2cm of delivered] (returned)  {RETURNED};
+  
+  \node[startend, below=0.8cm of cancelled] (end1) {};
+  \node[startend, below=0.8cm of failed]    (end2) {};
+  \node[startend, below=0.8cm of returned]  (end3) {};
+
+  \draw[arrow]    (start)     -- (pending);
   \draw[arrow]    (pending)   -- (transit);
   \draw[arrow]    (transit)   -- (delivered);
   \draw[errarrow] (pending)   -- (cancelled);
   \draw[errarrow] (transit)   -- (failed);
   \draw[errarrow] (delivered) -- (returned);
+  
+  \draw[arrow]    (cancelled) -- (end1);
+  \draw[arrow]    (failed)    -- (end2);
+  \draw[arrow]    (returned)  -- (end3);
 \end{tikzpicture}
 \end{center}
 
@@ -315,7 +327,7 @@ Estados almacenados en la tabla \texttt{shipments}.
   \midrule
   Pendiente   & \texttt{PENDING}     & Inicial & $\rightarrow$ \texttt{IN\_TRANSIT}, \texttt{CANCELLED} \\
   En tránsito & \texttt{IN\_TRANSIT} & Normal  & $\rightarrow$ \texttt{DELIVERED}, \texttt{FAILED} \\
-  Entregado   & \texttt{DELIVERED}   & Final   & $\rightarrow$ \texttt{RETURNED} \\
+  Entregado   & \texttt{DELIVERED}   & Normal  & $\rightarrow$ \texttt{RETURNED} \\
   Cancelado   & \texttt{CANCELLED}   & Final   & Ninguna (terminal). \\
   Fallido     & \texttt{FAILED}      & Final   & Ninguna (terminal). \\
   Devuelto    & \texttt{RETURNED}    & Final   & Ninguna (terminal). \\
@@ -358,6 +370,37 @@ $$ \text{Costo Total} = \sum_{i=1}^{n} \left( \text{Costo Base}_i + (\text{Peso 
 % ══════════════════════════════════════════════════════════════════════════════
 \section{Endpoints Detallados}
 % ══════════════════════════════════════════════════════════════════════════════
+
+% ── POST /shipments/quotes ───────────────────────────────────────────────────
+\subsection{Cotizar Envío (Tarifa Consolidada)}
+
+\routeheader{post}{POST}{/api/v1/shipments/quotes}
+
+\textbf{Descripción:} Calcula la tarifa consolidada de un conjunto de paquetes. Usado por \textbf{G4 (Checkout)} antes de confirmar la compra. No guarda en base de datos.
+
+\vspace{0.3cm}
+\textbf{Request Body} (\texttt{application/json}):
+
+\begin{lstlisting}
+{
+  "city": "Santiago",
+  "packages": [
+    { "origin_cd": "NORTE", "weight_kg": 2.0, "dimensions_cm": { "length": 40, "width": 30, "height": 20 } },
+    { "origin_cd": "CENTRO", "weight_kg": 1.0, "dimensions_cm": { "length": 15, "width": 10, "height": 5 } }
+  ]
+}
+\end{lstlisting}
+
+\textbf{Response --- 200 OK:}
+
+\begin{lstlisting}
+{
+  "total_shipping_cost": 10100,
+  "currency": "CLP"
+}
+\end{lstlisting}
+
+\noindent\rule{\textwidth}{0.4pt}
 
 % ── POST /shipments ───────────────────────────────────────────────────────────
 \subsection{Crear Despacho}
