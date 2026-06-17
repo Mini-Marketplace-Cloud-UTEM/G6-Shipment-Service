@@ -272,8 +272,13 @@ El servicio de \textbf{Despacho y Logística (G6)} es responsable de gestionar e
 \end{table}
 
 
-\subsection{Estados válidos}
+\subsection{Estados válidos (Máquina de Estados de Doble Nivel)}
 \label{sec:estados}
+
+Para evitar incongruencias visuales en el checkout y tracking, el sistema divide el estado físico del comercial.
+
+\subsubsection{5.1 Nivel Físico (Por Caja - G6)}
+Estados almacenados en la tabla \texttt{shipments}.
 
 \begin{center}
 \begin{tikzpicture}[
@@ -315,9 +320,39 @@ El servicio de \textbf{Despacho y Logística (G6)} es responsable de gestionar e
   Devuelto    & \texttt{RETURNED}    & Final   & Ninguna (terminal). \\
   \bottomrule
 \end{tabularx}
-\caption{Tabla de transiciones de estado.}
+\caption{Tabla de transiciones de estado a nivel físico (por caja).}
 \end{table}
 
+\subsubsection{5.2 Nivel Comercial / Global (Por Pedido - G1/G5)}
+Estado visualizado por el cliente, calculado al vuelo leyendo todas las cajas de un \texttt{order\_id}:
+\begin{itemize}[noitemsep]
+  \item \textbf{PENDING:} Todas las cajas están pendientes.
+  \item \textbf{PARTIALLY\_DELIVERED:} Al menos una caja fue entregada, el resto sigue en tránsito.
+  \item \textbf{DELIVERED:} 100\% de las cajas entregadas.
+  \item \textbf{HAS\_ISSUES:} Al menos un paquete registró fallo o devolución.
+\end{itemize}
+
+
+
+
+\section{Lógica de Negocio: Tarifa Única Consolidada}
+
+El endpoint \texttt{/quotes} debe calcular la suma total de las cajas para retornar un único cobro.
+
+\textbf{Paso 1: Peso Facturable (Factor de Conversión: 4000)}
+Para cada paquete, se cobra por el mayor valor entre el peso físico y el volumétrico:
+$$ \text{Peso Volumétrico} = \frac{\text{Largo (cm)} \times \text{Ancho (cm)} \times \text{Alto (cm)}}{4000} $$
+$$ \text{Peso Facturable} = \max(\text{Peso Físico}, \text{Peso Volumétrico}) $$
+
+\textbf{Paso 2: Tarifario Simulado por Macrozona}
+\begin{itemize}[noitemsep]
+  \item \textbf{Misma Zona} (Ej. CD Centro a Santiago): Base \$3000 + (\$500 x Kg Facturable).
+  \item \textbf{Zona Adyacente} (Ej. CD Centro a Norte/Sur): Base \$5000 + (\$800 x Kg Facturable).
+  \item \textbf{Zona Extrema} (Ej. CD Norte a Sur): Base \$8000 + (\$1200 x Kg Facturable).
+\end{itemize}
+
+\textbf{Paso 3: Ecuación Total Consolidada}
+$$ \text{Costo Total} = \sum_{i=1}^{n} \left( \text{Costo Base}_i + (\text{Peso Facturable}_i \times \text{Valor Kg}_i) \right) $$
 
 % ══════════════════════════════════════════════════════════════════════════════
 \section{Endpoints Detallados}
@@ -1144,7 +1179,8 @@ G1 consume nuestro endpoint de tracking.
 ]
   % ── Sistemas externos (izquierda) ──
   \node[extbox]                    (g5)  {G5 --- Pedidos\\\relax{\tiny[Python / FastAPI]}};
-  \node[extbox, above=1.8cm of g5] (g1)  {G1 --- Frontend\\\relax{\tiny[React / Next.js]}};
+  \node[extbox, above=0.8cm of g5] (g4)  {G4 --- Checkout\\\relax{\tiny[Node.js]}};
+  \node[extbox, above=0.8cm of g4] (g1)  {G1 --- Frontend\\\relax{\tiny[React / Next.js]}};
 
   % ── Contenedor principal (centro) ──
   \node[box, right=2.8cm of g5]    (g6)  {G6 --- Despachos\\\relax{\tiny[Python / FastAPI]}};
@@ -1158,7 +1194,8 @@ G1 consume nuestro endpoint de tracking.
 
   % ── Flechas REST (síncronas) ──
   \draw[arr, info] (g5)  -- node[above, font=\scriptsize] {\texttt{POST/GET/PATCH}} (g6);
-  \draw[arr, info] (g1)  -| node[above left, font=\scriptsize] {\texttt{GET}} (g6);
+  \draw[arr, info] (g4)  -- node[above, font=\scriptsize] {\texttt{POST /quotes}} (g6);
+  \draw[arr, info] (g1)  -| node[above left, font=\scriptsize] {\texttt{GET /shipments}} (g6);
   \draw[arr, primary] (g6) -- node[left, font=\scriptsize] {SQL} (db);
 
   % ── Flechas Eventos (asíncronas) ──
@@ -1180,7 +1217,12 @@ G1 consume nuestro endpoint de tracking.
 \end{center}
 
 
-\section{Esquema SQL de la Base de Datos}
+\section{Esquema SQL de la Base de Datos (PostgreSQL/Supabase)}
+
+Para soportar el modelo Multi-Origen y asegurar la trazabilidad y resiliencia de eventos, se implementan tres tablas:
+
+\subsection{Tabla Principal: shipments}
+Se elimina la restricción UNIQUE en \texttt{order\_id} para permitir 1:N.
 
 \begin{lstlisting}
 CREATE TABLE shipments (
@@ -1189,7 +1231,7 @@ CREATE TABLE shipments (
     customer_name      TEXT NOT NULL,
     address            TEXT NOT NULL,
     city               TEXT NOT NULL,
-    origin_cd          TEXT NOT NULL,
+    origin_cd          TEXT NOT NULL, -- 'NORTE', 'CENTRO', 'SUR'
     volumetric_weight  REAL NOT NULL,
     shipping_cost      INTEGER NOT NULL,
     weight_kg          REAL NOT NULL CHECK (weight_kg > 0),
@@ -1201,6 +1243,31 @@ CREATE TABLE shipments (
     created_at         TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at         TIMESTAMP NOT NULL DEFAULT NOW(),
     estimated_delivery TIMESTAMP
+);
+\end{lstlisting}
+
+\subsection{Tabla de Historial Temporal: shipment\_status\_history}
+Garantiza la trazabilidad (línea de tiempo) inmutable para el frontend.
+
+\begin{lstlisting}
+CREATE TABLE shipment_status_history (
+    id SERIAL PRIMARY KEY,
+    shipment_id TEXT REFERENCES shipments(shipment_id),
+    status TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+\end{lstlisting}
+
+\subsection{Tabla de Resiliencia: outbox\_events (Patrón Outbox)}
+Mitiga caídas del Event Broker.
+
+\begin{lstlisting}
+CREATE TABLE outbox_events (
+    id SERIAL PRIMARY KEY,
+    event_type TEXT NOT NULL,
+    payload JSONB NOT NULL,
+    status TEXT NOT NULL DEFAULT 'PENDING', -- PENDING, PUBLISHED
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 \end{lstlisting}
 
@@ -1234,7 +1301,7 @@ CREATE TABLE shipments (
   \midrule
   R1 & Caída del Event Broker impide que G8 notifique al usuario final. & Cola de reintentos con backoff exponencial; tabla \texttt{outbox} local para eventos pendientes. & Alto \\
   R2 & G5 envía datos incompletos o con formato inválido. & Validación estricta en el endpoint \texttt{POST /shipments} con retorno \texttt{422} y mensaje descriptivo. & Medio \\
-  R3 & Duplicación de envíos por reintentos de G5 sin \texttt{Idempotency-Key}. & Constraint \texttt{UNIQUE} en \texttt{order\_id} a nivel de base de datos y verificación del header. & Medio \\
+  R3 & Duplicación de envíos por reintentos de G5 sin \texttt{Idempotency-Key}. & Verificación estricta mediante \texttt{Idempotency-Key} a nivel de base de datos. & Medio \\
   R4 & Latencia alta en la base de datos Supabase por volumen de consultas de G7. & Índices en \texttt{status} y \texttt{created\_at}; endpoint paginado con \texttt{limit/offset}. & Medio \\
   R5 & Transición de estado inválida (e.g., de \texttt{DELIVERED} a \texttt{PENDING}). & Máquina de estados con validación explícita de transiciones permitidas antes de aplicar el PATCH. & Bajo \\
   R6 & Pérdida de trazabilidad entre servicios ante fallos parciales. & Propagación obligatoria de \texttt{X-Correlation-Id} en todos los requests y eventos publicados. & Medio \\
