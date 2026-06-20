@@ -23,18 +23,24 @@ El peso que se utiliza para calcular el costo **no es siempre el peso físico**.
 
 ## 2. Zonificación de Destinos y Orígenes
 
-Hemos categorizado las ciudades de Chile en tres grandes zonas (NORTE, CENTRO, SUR) y cruzamos el centro de distribución de origen (originCd) con la ciudad de destino del cliente para determinar el tipo de tarifa a aplicar:
+Hemos categorizado las ciudades de Chile en cinco grandes macro-zonas de destino (NORTE, CENTRO_NORTE, CENTRO, CENTRO_SUR, SUR) y cruzamos el centro de distribución de origen logístico (NORTE, CENTRO, SUR) con la ciudad del cliente para determinar el tipo de tarifa a aplicar:
 
 | Centro de Origen | Zona de Destino | Tipo de Tarifa |
 | :--- | :--- | :--- |
 | **NORTE** | NORTE | MISMA |
-| **NORTE** | CENTRO | ADYACENTE |
+| **NORTE** | CENTRO_NORTE | ADYACENTE |
+| **NORTE** | CENTRO | EXTREMA |
+| **NORTE** | CENTRO_SUR | EXTREMA |
 | **NORTE** | SUR | EXTREMA |
-| **CENTRO** | NORTE | ADYACENTE |
+| **CENTRO** | NORTE | EXTREMA |
+| **CENTRO** | CENTRO_NORTE | ADYACENTE |
 | **CENTRO** | CENTRO | MISMA |
-| **CENTRO** | SUR | ADYACENTE |
+| **CENTRO** | CENTRO_SUR | ADYACENTE |
+| **CENTRO** | SUR | EXTREMA |
 | **SUR** | NORTE | EXTREMA |
-| **SUR** | CENTRO | ADYACENTE |
+| **SUR** | CENTRO_NORTE | EXTREMA |
+| **SUR** | CENTRO | EXTREMA |
+| **SUR** | CENTRO_SUR | ADYACENTE |
 | **SUR** | SUR | MISMA |
 
 *Nota: Cualquier ciudad de destino no mapeada o desconocida cae por defecto en la categoría de tarifa EXTREMA.*
@@ -47,9 +53,9 @@ Una vez resuelto el tipo de tarifa (MISMA, ADYACENTE, EXTREMA), aplicamos un cos
 
 | Tipo de Tarifa | Costo Base Fijo (CLP) | Costo por Kg Facturable (CLP/Kg) |
 | :--- | :--- | :--- |
-| **MISMA (Intrazona)** | .000 |  |
-| **ADYACENTE (Interzona corta)** | .000 |  |
-| **EXTREMA (Interzona larga)** | .000 | .200 |
+| **MISMA (Intrazona)** | 3.000 | 500 |
+| **ADYACENTE (Interzona corta)** | 5.000 | 800 |
+| **EXTREMA (Interzona larga)** | 8.000 | 1.200 |
 
 ### Fórmula Final
 El cálculo matemático que realiza nuestro backend para cada paquete es:

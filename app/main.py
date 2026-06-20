@@ -47,14 +47,16 @@ VALID_TRANSITIONS = {
 
 # --- Pricing Engine Constants ---
 ZONE_MAP = {
-    "NORTE": {"NORTE": "MISMA", "CENTRO": "ADYACENTE", "SUR": "EXTREMA"},
-    "CENTRO": {"NORTE": "ADYACENTE", "CENTRO": "MISMA", "SUR": "ADYACENTE"},
-    "SUR": {"NORTE": "EXTREMA", "CENTRO": "ADYACENTE", "SUR": "MISMA"},
+    "NORTE": {"NORTE": "MISMA", "CENTRO_NORTE": "ADYACENTE", "CENTRO": "EXTREMA", "CENTRO_SUR": "EXTREMA", "SUR": "EXTREMA"},
+    "CENTRO": {"NORTE": "EXTREMA", "CENTRO_NORTE": "ADYACENTE", "CENTRO": "MISMA", "CENTRO_SUR": "ADYACENTE", "SUR": "EXTREMA"},
+    "SUR": {"NORTE": "EXTREMA", "CENTRO_NORTE": "EXTREMA", "CENTRO": "EXTREMA", "CENTRO_SUR": "ADYACENTE", "SUR": "MISMA"},
 }
 CITY_ZONE = {
     "Arica": "NORTE", "Iquique": "NORTE", "Antofagasta": "NORTE",
+    "Copiapó": "CENTRO_NORTE", "La Serena": "CENTRO_NORTE", "Coquimbo": "CENTRO_NORTE",
     "Santiago": "CENTRO", "Valparaíso": "CENTRO", "Rancagua": "CENTRO",
-    "Concepción": "SUR", "Temuco": "SUR", "Puerto Montt": "SUR", "Punta Arenas": "SUR",
+    "Talca": "CENTRO_SUR", "Chillán": "CENTRO_SUR", "Concepción": "CENTRO_SUR",
+    "Temuco": "SUR", "Valdivia": "SUR", "Puerto Montt": "SUR", "Punta Arenas": "SUR",
 }
 TARIFF = {
     "MISMA":     {"base": 3000, "per_kg": 500},
