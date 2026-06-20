@@ -88,11 +88,17 @@ class ShipmentListItem(CamelModel):
     created_at: datetime
     updated_at: datetime
 
-class ShipmentListResponse(CamelModel):
+class Pagination(CamelModel):
+    page: int
+    page_size: int
     total: int
-    limit: int
-    offset: int
-    shipments: List[ShipmentListItem]
+    total_pages: int
+    has_next: bool
+    has_prev: bool
+
+class ShipmentListResponse(CamelModel):
+    data: List[ShipmentListItem]
+    pagination: Pagination
 
 class HealthResponse(CamelModel):
     status: str
@@ -100,9 +106,12 @@ class HealthResponse(CamelModel):
     version: str
     timestamp: datetime
 
+class ErrorDetail(CamelModel):
+    field: str
+    message: str
+
 class ErrorResponse(CamelModel):
-    timestamp: datetime
-    status: int
     code: str
     message: str
-    correlationId: str
+    details: Optional[List[ErrorDetail]] = None
+    correlation_id: Optional[str] = None

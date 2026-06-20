@@ -17,6 +17,7 @@ from app.schemas import (
     ShipmentUpdateResponse,
     ShipmentListResponse,
     ShipmentListItem,
+    Pagination,
     HealthResponse,
     ErrorResponse,
     ShipmentStatus,
@@ -83,31 +84,16 @@ def get_correlation_id(request: Request) -> str:
 # Manejador personalizado de errores de validación
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    errors = exc.errors()
-    if errors:
-        err = errors[0]
-        field = ".".join([str(loc) for loc in err.get("loc", []) if loc != "body"])
-        err_type = err.get('type')
-        
-        if err_type == 'missing':
-            message = f"El campo {field} es obligatorio."
-        elif err_type == 'greater_than':
-            limit = err.get('ctx', {}).get('gt')
-            message = f"El campo {field} debe ser mayor a {limit}."
-        elif err_type == 'less_than_equal':
-            limit = err.get('ctx', {}).get('le')
-            message = f"El campo {field} debe ser menor o igual a {limit}."
-        else:
-            message = f"El campo {field} no es válido: {err.get('msg')}."
-    else:
-        message = "Error de validación de datos."
+    details = []
+    for error in exc.errors():
+        field = ".".join([str(loc) for loc in error.get("loc", []) if loc != "body"])
+        details.append({"field": field, "message": error.get("msg", "Error de validación")})
 
     error_response = ErrorResponse(
-        timestamp=datetime.now(timezone.utc),
-        status=status.HTTP_422_UNPROCESSABLE_ENTITY,
         code="VALIDATION_ERROR",
-        message=message,
-        correlationId=get_correlation_id(request)
+        message="Error de validación en los campos de entrada.",
+        details=details,
+        correlation_id=get_correlation_id(request)
     )
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -116,13 +102,30 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 def make_error_response(code: int, err_code: str, message: str, correlation_id: str) -> JSONResponse:
     error_response = ErrorResponse(
-        timestamp=datetime.now(timezone.utc),
-        status=code,
         code=err_code,
         message=message,
-        correlationId=correlation_id
+        correlation_id=correlation_id
     )
     return JSONResponse(status_code=code, content=jsonable_encoder(error_response))
+
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    code = "INTERNAL_ERROR"
+    if exc.status_code == 404:
+        code = "RESOURCE_NOT_FOUND"
+    elif exc.status_code == 400:
+        code = "BAD_REQUEST"
+    elif exc.status_code == 409:
+        code = "CONFLICT"
+        
+    error_response = ErrorResponse(
+        code=code,
+        message=exc.detail,
+        correlation_id=get_correlation_id(request)
+    )
+    return JSONResponse(status_code=exc.status_code, content=jsonable_encoder(error_response))
 
 # Dependencia para validar headers
 async def verify_headers(
@@ -243,8 +246,8 @@ async def get_shipments(
     request: Request,
     order_id: Optional[str] = None,
     status_filter: Optional[ShipmentStatus] = Query(None, alias="status"),
-    limit: int = 50,
-    offset: int = 0,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db)
 ):
     correlation_id = get_correlation_id(request)
@@ -268,7 +271,10 @@ async def get_shipments(
         query = query.filter(Shipment.status == status_filter.value)
         
     total = query.count()
-    shipments = query.offset(offset).limit(limit).all()
+    total_pages = (total + page_size - 1) // page_size if total > 0 else 1
+    offset = (page - 1) * page_size
+    
+    shipments = query.offset(offset).limit(page_size).all()
     
     items = []
     for s in shipments:
@@ -286,11 +292,18 @@ async def get_shipments(
             updated_at=s.updated_at
         ))
     
-    return ShipmentListResponse(
+    pagination = Pagination(
+        page=page,
+        page_size=page_size,
         total=total,
-        limit=limit,
-        offset=offset,
-        shipments=items
+        total_pages=total_pages,
+        has_next=page < total_pages,
+        has_prev=page > 1
+    )
+    
+    return ShipmentListResponse(
+        data=items,
+        pagination=pagination
     )
 
 
