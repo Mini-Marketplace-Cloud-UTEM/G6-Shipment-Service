@@ -274,15 +274,15 @@ Ubicación: `tests/postman_collection.json`
 
 ## 7. Orden de Ejecución
 
-- [ ] **Paso 1:** Configurar Supabase — crear proyecto, obtener `DATABASE_URL`
-- [ ] **Paso 2:** Actualizar `database.py` + `requirements.txt`
-- [ ] **Paso 3:** Reescribir `models.py` — columnas + tablas nuevas
-- [ ] **Paso 4:** Reescribir `schemas.py` — schemas v1.1 + camelCase
-- [ ] **Paso 5:** Reescribir `main.py` — pricing engine + todos los endpoints
-- [ ] **Paso 6:** Generar `openapi.yaml` — contrato formal
-- [ ] **Paso 7:** Actualizar `README.md`
-- [ ] **Paso 8:** Crear colección Postman
-- [ ] **Paso 9:** Verificar localmente (levantar + probar)
+- [x] **Paso 1:** Configurar Supabase — crear proyecto, obtener `DATABASE_URL`
+- [x] **Paso 2:** Actualizar `database.py` + `requirements.txt`
+- [x] **Paso 3:** Reescribir `models.py` — columnas + tablas nuevas
+- [x] **Paso 4:** Reescribir `schemas.py` — schemas v1.1 + camelCase
+- [x] **Paso 5:** Reescribir `main.py` — pricing engine + todos los endpoints
+- [x] **Paso 6:** Generar `openapi.yaml` — contrato formal
+- [x] **Paso 7:** Actualizar `README.md`
+- [x] **Paso 8:** Crear colección Postman
+- [x] **Paso 9:** Verificar localmente (levantar + probar)
 - [ ] **Paso 10:** Deploy a Render (push + verificar URL pública)
 - [ ] **Paso 11:** Push `openapi.yaml` al repo de la org
 
