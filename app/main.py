@@ -450,7 +450,7 @@ async def get_shipment_history(request: Request, shipment_id: str, db: Session =
     }
 
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 async def root():
     return {"message": "API de Despacho y Logística --- Grupo 6 is running. Visit /docs for documentation."}
 
