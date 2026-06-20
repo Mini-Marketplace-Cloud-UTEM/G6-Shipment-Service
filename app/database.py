@@ -7,7 +7,7 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 DATABASE_URL = os.getenv(
     "DATABASE_URL", 
     "postgresql://postgres:G6.DESPACHO@db.cirrgzafgddejnqtrkdy.supabase.co:5432/postgres"
-)
+).strip()
 
 # Render sometimes sets postgres:// instead of postgresql://
 if DATABASE_URL.startswith("postgres://"):
