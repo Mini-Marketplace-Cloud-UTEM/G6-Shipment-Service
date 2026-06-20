@@ -1,7 +1,7 @@
 {
   "info": {
-    "name": "G6 Despacho v1.1",
-    "description": "Pruebas de contrato para la API de Despacho v1.1 (Marketplace Cloud)",
+    "name": "G6 Despacho v1.2",
+    "description": "Pruebas de contrato para la API de Despacho v1.2 (Marketplace Cloud)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -112,7 +112,7 @@
           }
         ],
         "url": {
-          "raw": "{{base_url}}/api/v1/shipments?order_id=ORD-TEST-001",
+          "raw": "{{base_url}}/api/v1/shipments?orderId=ORD-TEST-001",
           "host": [
             "{{base_url}}"
           ],
@@ -123,7 +123,7 @@
           ],
           "query": [
             {
-              "key": "order_id",
+              "key": "orderId",
               "value": "ORD-TEST-001"
             }
           ]
