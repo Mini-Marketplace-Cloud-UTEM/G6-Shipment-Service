@@ -21,12 +21,36 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/QuoteResponse'
-        '422':
-          description: Validation Error
+        '400':
+          description: Bad Request
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/v1/shipments:
     post:
       summary: Create Shipment
@@ -72,24 +96,48 @@ paths:
                 items:
                   type: string
                 title: Response Create Shipment Api V1 Shipments Post
-        '422':
-          description: Validation Error
+        '400':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
     get:
       summary: Get Shipments
       operationId: get_shipments_api_v1_shipments_get
       parameters:
-      - name: order_id
+      - name: orderId
         in: query
         required: false
         schema:
           anyOf:
           - type: string
           - type: 'null'
-          title: Order Id
+          title: Orderid
       - name: status
         in: query
         required: false
@@ -106,7 +154,7 @@ paths:
           minimum: 1
           default: 1
           title: Page
-      - name: page_size
+      - name: pageSize
         in: query
         required: false
         schema:
@@ -114,7 +162,7 @@ paths:
           maximum: 100
           minimum: 1
           default: 20
-          title: Page Size
+          title: Pagesize
       - name: x-request-id
         in: header
         required: true
@@ -144,13 +192,43 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
-        '422':
-          description: Validation Error
+              schema:
+                anyOf:
+                - $ref: '#/components/schemas/ShipmentListResponse'
+                - type: array
+                  items:
+                    $ref: '#/components/schemas/ShipmentResponse'
+                title: Response Get Shipments Api V1 Shipments Get
+        '400':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
   /api/v1/shipments/{shipment_id}:
     get:
       summary: Get Shipment By Id
@@ -193,12 +271,36 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ShipmentResponse'
-        '422':
-          description: Validation Error
+        '400':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
     patch:
       summary: Update Shipment Status
       operationId: update_shipment_status_api_v1_shipments__shipment_id__patch
@@ -246,12 +348,36 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ShipmentUpdateResponse'
-        '422':
-          description: Validation Error
+        '400':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
   /api/v1/shipments/{shipment_id}/history:
     get:
       summary: Get Shipment History
@@ -292,13 +418,57 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
-        '422':
-          description: Validation Error
+              schema:
+                $ref: '#/components/schemas/ShipmentHistoryResponse'
+        '400':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+  /:
+    get:
+      summary: Root
+      operationId: root__head
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+    head:
+      summary: Root
+      operationId: root__head
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
   /api/v1/health:
     get:
       summary: Health
@@ -332,15 +502,44 @@ components:
       - width
       - height
       title: DimensionsCm
-    HTTPValidationError:
+    ErrorDetail:
       properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
+        field:
+          type: string
+          title: Field
+        message:
+          type: string
+          title: Message
       type: object
-      title: HTTPValidationError
+      required:
+      - field
+      - message
+      title: ErrorDetail
+    ErrorResponse:
+      properties:
+        code:
+          type: string
+          title: Code
+        message:
+          type: string
+          title: Message
+        details:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/ErrorDetail'
+            type: array
+          - type: 'null'
+          title: Details
+        correlationId:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Correlationid
+      type: object
+      required:
+      - code
+      - message
+      title: ErrorResponse
     HealthResponse:
       properties:
         status:
@@ -386,6 +585,35 @@ components:
       - weightKg
       - dimensionsCm
       title: PackageInput
+    Pagination:
+      properties:
+        page:
+          type: integer
+          title: Page
+        pageSize:
+          type: integer
+          title: Pagesize
+        total:
+          type: integer
+          title: Total
+        totalPages:
+          type: integer
+          title: Totalpages
+        hasNext:
+          type: boolean
+          title: Hasnext
+        hasPrev:
+          type: boolean
+          title: Hasprev
+      type: object
+      required:
+      - page
+      - pageSize
+      - total
+      - totalPages
+      - hasNext
+      - hasPrev
+      title: Pagination
     QuoteRequest:
       properties:
         city:
@@ -449,6 +677,78 @@ components:
       - city
       - packages
       title: ShipmentCreate
+    ShipmentHistoryEvent:
+      properties:
+        status:
+          $ref: '#/components/schemas/ShipmentStatus'
+        createdAt:
+          type: string
+          format: date-time
+          title: Createdat
+      type: object
+      required:
+      - status
+      - createdAt
+      title: ShipmentHistoryEvent
+    ShipmentHistoryResponse:
+      properties:
+        shipmentId:
+          type: string
+          title: Shipmentid
+        history:
+          items:
+            $ref: '#/components/schemas/ShipmentHistoryEvent'
+          type: array
+          title: History
+      type: object
+      required:
+      - shipmentId
+      - history
+      title: ShipmentHistoryResponse
+    ShipmentListItem:
+      properties:
+        shipmentId:
+          type: string
+          title: Shipmentid
+        orderId:
+          type: string
+          title: Orderid
+        status:
+          $ref: '#/components/schemas/ShipmentStatus'
+        city:
+          type: string
+          title: City
+        createdAt:
+          type: string
+          format: date-time
+          title: Createdat
+        updatedAt:
+          type: string
+          format: date-time
+          title: Updatedat
+      type: object
+      required:
+      - shipmentId
+      - orderId
+      - status
+      - city
+      - createdAt
+      - updatedAt
+      title: ShipmentListItem
+    ShipmentListResponse:
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/ShipmentListItem'
+          type: array
+          title: Data
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+      type: object
+      required:
+      - data
+      - pagination
+      title: ShipmentListResponse
     ShipmentResponse:
       properties:
         shipmentId:
@@ -552,29 +852,3 @@ components:
       - previousStatus
       - updatedAt
       title: ShipmentUpdateResponse
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
