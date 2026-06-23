@@ -1,5 +1,8 @@
 # Servicio de Despacho y Logística — Grupo 6 (Marketplace Cloud)
 
+[![Deploy Status](https://img.shields.io/badge/Render-Live-brightgreen)](https://g6-despacho.onrender.com/docs)
+**🔗 Link API en Producción:** [https://g6-despacho.onrender.com/docs](https://g6-despacho.onrender.com/docs)
+
 Este repositorio contiene la especificación, documentación técnica y el prototipo funcional (mock) del **Servicio de Despacho y Logística** (Grupo 6) diseñado para el ecosistema del Marketplace Cloud.
 
 El microservicio se encarga de la gestión del ciclo de vida de los envíos (*Shipments*), desde la recepción de la orden de despacho hasta la entrega final al cliente o su devolución, integrando flujos síncronos (REST) y asíncronos (Eventos/Kafka).
@@ -94,6 +97,20 @@ Este servicio ahora utiliza **Supabase (PostgreSQL)** como base de datos. Para e
    docker run -d -p 8000:8000 despacho-grupo6
    ```
    El servidor estará disponible en `http://localhost:8000`.
+
+### Opción 3: Pruebas Automatizadas
+
+El repositorio cuenta con una suite de pruebas para verificar el motor de precios y la salud de la API.
+
+1. **Instalar dependencias de pruebas:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. **Ejecutar pytest:**
+   ```bash
+   pytest tests/
+   ```
 
 ---
 
