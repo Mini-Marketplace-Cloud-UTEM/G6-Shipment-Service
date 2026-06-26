@@ -95,8 +95,12 @@ def test_openapi_is_up_to_date():
     except FileNotFoundError:
         assert False, "El archivo openapi.yaml no existe. Corre 'python scripts/dump_openapi.py'"
         
-    # 3. Comparar
-    if openapi_schema != disk_schema:
+    # 3. Comparar (Normalizando con JSON para evitar diferencias entre tuplas de Python y listas de YAML)
+    import json
+    schema_normalized = json.loads(json.dumps(openapi_schema))
+    disk_normalized = json.loads(json.dumps(disk_schema))
+    
+    if schema_normalized != disk_normalized:
         assert False, (
             "\n\n=======================================================\n"
             "ERROR DE CALIDAD (QUALITY GATE):\n"

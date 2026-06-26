@@ -25,7 +25,7 @@ def dump():
     with open(output_path, "w", encoding="utf-8") as f:
         yaml.dump(openapi_schema, f, sort_keys=False, allow_unicode=True)
         
-    print(f"✅ Esquema OpenAPI exportado exitosamente a: {output_path}")
+    print(f"[EXITO] Esquema OpenAPI exportado exitosamente a: {output_path}")
 
 if __name__ == "__main__":
     dump()
