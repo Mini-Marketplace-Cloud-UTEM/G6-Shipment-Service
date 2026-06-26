@@ -42,5 +42,11 @@ jobs:
       # Paso 4: Ejecutar nuestras pruebas. 
       # Si fallan, GitHub marca el trabajo con una X roja. Si pasan, con un ✔️ verde.
       - name: Ejecutar pruebas (Pytest)
+        # Inyectamos una variable de entorno temporal solo para este paso.
+        # Usamos una base de datos SQLite en memoria RAM (sqlite:///:memory:).
+        # Así pasamos la validación de inicio sin conectarnos a la BD de producción,
+        # lo cual es una excelente práctica para no ensuciar datos reales con tests.
+        env:
+          DATABASE_URL: "sqlite:///:memory:"
         run: |
           pytest
