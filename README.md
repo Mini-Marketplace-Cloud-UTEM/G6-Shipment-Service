@@ -1,7 +1,9 @@
 # Servicio de Despacho y Logística — Grupo 6 (Marketplace Cloud)
 
-[![Deploy Status](https://img.shields.io/badge/Render-Live-brightgreen)](https://g6-despacho.onrender.com/docs)
-**🔗 Link API en Producción:** [https://g6-despacho.onrender.com/docs](https://g6-despacho.onrender.com/docs)
+[![Deploy Status](https://img.shields.io/badge/Render-Mock_E2-blue)](https://g6-despacho.onrender.com/docs)
+[![Deploy Status](https://img.shields.io/badge/Render-App_Oficial_E3-brightgreen)](https://g6-despacho-oficial.onrender.com/docs)
+**🔗 Link Mock (E2):** [https://g6-despacho.onrender.com/docs](https://g6-despacho.onrender.com/docs)
+**🔗 Link API Oficial (E3):** [https://g6-despacho-oficial.onrender.com/docs](https://g6-despacho-oficial.onrender.com/docs) *(Reemplazar con link final de Render)*
 
 Este repositorio contiene la especificación, documentación técnica y el prototipo funcional (mock) del **Servicio de Despacho y Logística** (Grupo 6) diseñado para el ecosistema del Marketplace Cloud.
 

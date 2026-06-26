@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
   title: API de Despacho y Logística --- Grupo 6
-  description: Servicio de gestión de despachos v1.2
-  version: 1.2.0
+  description: Servicio de gestión de despachos v1.3
+  version: 1.3.0
 paths:
   /api/v1/shipments/quotes:
     post:
@@ -450,7 +450,7 @@ paths:
   /:
     get:
       summary: Root
-      operationId: root__head
+      operationId: root_endpoint
       responses:
         '200':
           description: Successful Response
@@ -459,7 +459,7 @@ paths:
               schema: {}
     head:
       summary: Root
-      operationId: root__head
+      operationId: root_endpoint
       responses:
         '200':
           description: Successful Response
