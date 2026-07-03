@@ -2,13 +2,14 @@ from datetime import datetime, timedelta, timezone
 import uuid
 from typing import Optional, List, Union
 
-from fastapi import FastAPI, Query, status, Depends, Request, Header
+from fastapi import FastAPI, Query, status, Depends, Request, Header, BackgroundTasks
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 
-from app.database import engine, Base, get_db
+from app.database import engine, Base, get_db, SessionLocal
+import asyncio
 from app.models import Shipment, ShipmentStatusHistory, OutboxEvent
 from app.schemas import (
     ShipmentCreate,
@@ -156,8 +157,105 @@ async def quote_shipment(request: QuoteRequest):
     return QuoteResponse(total_shipping_cost=total_cost, currency="CLP")
 
 
+async def simulate_physical_flow(shipment_ids: List[str], correlation_id: str):
+    await asyncio.sleep(45)
+    
+    db = SessionLocal()
+    try:
+        for shipment_id in shipment_ids:
+            shipment = db.query(Shipment).filter(Shipment.shipment_id == shipment_id).first()
+            if not shipment or shipment.status != "PENDING":
+                continue
+            
+            now = datetime.now(timezone.utc)
+            shipment.status = "IN_TRANSIT"
+            shipment.updated_at = now
+            
+            history = ShipmentStatusHistory(
+                shipment_id=shipment_id,
+                status="IN_TRANSIT",
+                created_at=now
+            )
+            db.add(history)
+            
+            event_payload = {
+                "eventId": str(uuid.uuid4()),
+                "eventType": "ShipmentIntransit",
+                "version": "1.1",
+                "occurredAt": now.isoformat(),
+                "producer": "g6-despacho",
+                "correlationId": correlation_id,
+                "payload": {
+                    "shipmentId": shipment_id,
+                    "orderId": shipment.order_id,
+                    "newStatus": "IN_TRANSIT",
+                    "previousStatus": "PENDING"
+                }
+            }
+            outbox_event = OutboxEvent(
+                event_type="ShipmentIntransit",
+                payload=event_payload,
+                status="PENDING",
+                created_at=now
+            )
+            db.add(outbox_event)
+        
+        db.commit()
+    except Exception as e:
+        db.rollback()
+    finally:
+        db.close()
+        
+    await asyncio.sleep(45)
+    
+    db = SessionLocal()
+    try:
+        for shipment_id in shipment_ids:
+            shipment = db.query(Shipment).filter(Shipment.shipment_id == shipment_id).first()
+            if not shipment or shipment.status != "IN_TRANSIT":
+                continue
+            
+            now = datetime.now(timezone.utc)
+            shipment.status = "DELIVERED"
+            shipment.updated_at = now
+            
+            history = ShipmentStatusHistory(
+                shipment_id=shipment_id,
+                status="DELIVERED",
+                created_at=now
+            )
+            db.add(history)
+            
+            event_payload = {
+                "eventId": str(uuid.uuid4()),
+                "eventType": "ShipmentDelivered",
+                "version": "1.1",
+                "occurredAt": now.isoformat(),
+                "producer": "g6-despacho",
+                "correlationId": correlation_id,
+                "payload": {
+                    "shipmentId": shipment_id,
+                    "orderId": shipment.order_id,
+                    "newStatus": "DELIVERED",
+                    "previousStatus": "IN_TRANSIT"
+                }
+            }
+            outbox_event = OutboxEvent(
+                event_type="ShipmentDelivered",
+                payload=event_payload,
+                status="PENDING",
+                created_at=now
+            )
+            db.add(outbox_event)
+        
+        db.commit()
+    except Exception as e:
+        db.rollback()
+    finally:
+        db.close()
+
 @app.post("/api/v1/shipments", response_model=ShipmentCreateResponse, status_code=status.HTTP_201_CREATED, responses=error_responses, dependencies=[Depends(verify_headers)])
-async def create_shipment(request: Request, shipment_data: ShipmentCreate, db: Session = Depends(get_db)):
+async def create_shipment(request: Request, shipment_data: ShipmentCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     correlation_id = get_correlation_id(request)
             
     now = datetime.now(timezone.utc)
@@ -225,6 +323,7 @@ async def create_shipment(request: Request, shipment_data: ShipmentCreate, db: S
         db.add(outbox_event)
         
     db.commit()
+    background_tasks.add_task(simulate_physical_flow, shipment_ids, correlation_id)
     return ShipmentCreateResponse(shipment_ids=shipment_ids)
 
 def _format_shipment(s: Shipment) -> dict:
