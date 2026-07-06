@@ -147,16 +147,16 @@ error_responses = {
     500: {"model": ErrorResponse}
 }
 
-@app.post("/api/v1/shipments/quotes", response_model=QuoteResponse, responses=error_responses)
+@app.post("/api/v2/shipments/quotes", response_model=QuoteResponse, responses=error_responses)
 async def quote_shipment(request: QuoteRequest):
     total_cost = 0
     for pkg in request.packages:
         _, cost = calculate_shipping_cost(request.city, pkg.origin_cd.value, pkg.weight_kg, pkg.dimensions_cm)
         total_cost += cost
-    return QuoteResponse(total_shipping_cost=total_cost, currency="CLP")
+    return QuoteResponse(total_shipping_cost={"amount": total_cost, "currency": "CLP"})
 
 
-@app.post("/api/v1/shipments", response_model=ShipmentCreateResponse, status_code=status.HTTP_201_CREATED, responses=error_responses, dependencies=[Depends(verify_headers)])
+@app.post("/api/v2/shipments", response_model=ShipmentCreateResponse, status_code=status.HTTP_201_CREATED, responses=error_responses, dependencies=[Depends(verify_headers)])
 async def create_shipment(request: Request, shipment_data: ShipmentCreate, db: Session = Depends(get_db)):
     correlation_id = get_correlation_id(request)
             
@@ -166,8 +166,13 @@ async def create_shipment(request: Request, shipment_data: ShipmentCreate, db: S
     shipment_ids = []
     total_packages = len(shipment_data.packages)
     
+    today_str = now.strftime("%Y%m%d")
+    prefix = f"SHP-{today_str}-"
+    count_today = db.query(Shipment).filter(Shipment.shipment_id.like(f"{prefix}%")).count()
+    
     for idx, pkg in enumerate(shipment_data.packages, start=1):
-        shipment_id = f"SHP-{uuid.uuid4().hex[:8]}"
+        shipment_seq = count_today + idx
+        shipment_id = f"{prefix}{shipment_seq:03d}"
         shipment_ids.append(shipment_id)
         
         volumetric_weight, shipping_cost = calculate_shipping_cost(
@@ -203,7 +208,7 @@ async def create_shipment(request: Request, shipment_data: ShipmentCreate, db: S
         # 3. Create Outbox Event
         event_payload = {
             "eventId": str(uuid.uuid4()),
-            "eventType": "ShipmentCreated",
+            "eventType": "SHIPMENT_CREATED",
             "version": "1.1",
             "occurredAt": now.isoformat(),
             "producer": "g6-despacho",
@@ -217,7 +222,7 @@ async def create_shipment(request: Request, shipment_data: ShipmentCreate, db: S
             }
         }
         outbox_event = OutboxEvent(
-            event_type="ShipmentCreated",
+            event_type="SHIPMENT_CREATED",
             payload=event_payload,
             status="PENDING",
             created_at=now
@@ -243,7 +248,7 @@ def _format_shipment(s: Shipment) -> dict:
         "city": s.city,
         "origin_cd": s.origin_cd,
         "volumetric_weight": s.volumetric_weight,
-        "shipping_cost": s.shipping_cost,
+        "shipping_cost": {"amount": s.shipping_cost, "currency": "CLP"},
         "weight_kg": s.weight_kg,
         "status": s.status,
         "created_at": s.created_at,
@@ -252,7 +257,7 @@ def _format_shipment(s: Shipment) -> dict:
     }
 
 
-@app.get("/api/v1/shipments", response_model=Union[ShipmentListResponse, List[ShipmentResponse]], responses=error_responses, dependencies=[Depends(verify_headers)])
+@app.get("/api/v2/shipments", response_model=Union[ShipmentListResponse, List[ShipmentResponse]], responses=error_responses, dependencies=[Depends(verify_headers)])
 async def get_shipments(
     request: Request,
     order_id: Optional[str] = Query(None, alias="orderId"),
@@ -318,7 +323,7 @@ async def get_shipments(
     )
 
 
-@app.get("/api/v1/shipments/{shipment_id}", response_model=ShipmentResponse, responses=error_responses, dependencies=[Depends(verify_headers)])
+@app.get("/api/v2/shipments/{shipment_id}", response_model=ShipmentResponse, responses=error_responses, dependencies=[Depends(verify_headers)])
 async def get_shipment_by_id(request: Request, shipment_id: str, db: Session = Depends(get_db)):
     correlation_id = get_correlation_id(request)
     
@@ -334,7 +339,7 @@ async def get_shipment_by_id(request: Request, shipment_id: str, db: Session = D
     return _format_shipment(shipment)
 
 
-@app.patch("/api/v1/shipments/{shipment_id}", response_model=ShipmentUpdateResponse, responses=error_responses, dependencies=[Depends(verify_headers)])
+@app.patch("/api/v2/shipments/{shipment_id}", response_model=ShipmentUpdateResponse, responses=error_responses, dependencies=[Depends(verify_headers)])
 async def update_shipment_status(request: Request, shipment_id: str, update_data: ShipmentUpdate, db: Session = Depends(get_db)):
     correlation_id = get_correlation_id(request)
     
@@ -390,7 +395,7 @@ async def update_shipment_status(request: Request, shipment_id: str, update_data
     db.add(history)
     
     # 3. Add outbox event
-    event_type = f"Shipment{new_status.capitalize().replace('_', '')}"
+    event_type = f"SHIPMENT_{new_status.upper()}"
     event_payload = {
         "eventId": str(uuid.uuid4()),
         "eventType": event_type,
@@ -428,7 +433,7 @@ async def update_shipment_status(request: Request, shipment_id: str, update_data
     )
 
 
-@app.get("/api/v1/shipments/{shipment_id}/history", response_model=ShipmentHistoryResponse, responses=error_responses, dependencies=[Depends(verify_headers)])
+@app.get("/api/v2/shipments/{shipment_id}/history", response_model=ShipmentHistoryResponse, responses=error_responses, dependencies=[Depends(verify_headers)])
 async def get_shipment_history(request: Request, shipment_id: str, db: Session = Depends(get_db)):
     correlation_id = get_correlation_id(request)
     
