@@ -12,8 +12,6 @@ Todos los endpoints exigen los siguientes headers:
 Todos los errores devuelven un JSON base:
 ```json
 {
-  "timestamp": "2026-06-11T14:05:00Z",
-  "status": 422,
   "code": "VALIDATION_ERROR",
   "message": "Mensaje de error...",
   "correlationId": "req-123e4567"
@@ -38,14 +36,14 @@ Deben enviar los ítems agrupados por caja física.
   "city": "Santiago",
   "packages": [
     {
-      "origin_cd": "NORTE",
-      "weight_kg": 2.0,
-      "dimensions_cm": { "length": 40, "width": 30, "height": 20 }
+      "originCd": "NORTE",
+      "weightKg": 2.0,
+      "dimensionsCm": { "length": 40, "width": 30, "height": 20 }
     },
     {
-      "origin_cd": "CENTRO",
-      "weight_kg": 1.0,
-      "dimensions_cm": { "length": 15, "width": 10, "height": 5 }
+      "originCd": "CENTRO",
+      "weightKg": 1.0,
+      "dimensionsCm": { "length": 15, "width": 10, "height": 5 }
     }
   ]
 }
@@ -55,7 +53,9 @@ Deben enviar los ítems agrupados por caja física.
 Recibirán el costo total que deben sumar al ticket final del cliente.
 ```json
 {
-  "total_shipping_cost": 10100,
-  "currency": "CLP"
+  "totalShippingCost": {
+    "amount": 10100,
+    "currency": "CLP"
+  }
 }
 ```

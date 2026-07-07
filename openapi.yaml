@@ -861,3 +861,4 @@ components:
       - previousStatus
       - updatedAt
       title: ShipmentUpdateResponse
+

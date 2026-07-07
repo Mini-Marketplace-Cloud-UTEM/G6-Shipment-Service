@@ -190,12 +190,12 @@ En caso de fallo, la API responde con un esquema alineado al estándar de la org
 
 ## ⚡ Flujo de Eventos (Asincronía)
 
-El servicio publica actualizaciones en el tópico Kafka `shipment-events`. El sobre (*envelope*) de los eventos utiliza la convención **camelCase** y consta de la siguiente cabecera estándar:
+El servicio publica actualizaciones en un tópico de **Google Cloud Pub/Sub** mediante un worker del patrón Outbox. El sobre (*envelope*) de los eventos utiliza la convención **camelCase** y consta de la siguiente cabecera estándar:
 
 ```json
 {
   "eventId": "uuid-evento-9999",
-  "eventType": "ShipmentCreated",
+  "eventType": "SHIPMENT_CREATED",
   "version": "1.2",
   "occurredAt": "2026-06-16T17:05:00Z",
   "producer": "g6-despacho",
@@ -205,9 +205,9 @@ El servicio publica actualizaciones en el tópico Kafka `shipment-events`. El so
 ```
 
 ### Eventos Publicados
-1. **`ShipmentCreated`**: Despacho creado con éxito.
-2. **`ShipmentInTransit`**: El despacho ha salido de bodega física.
-3. **`ShipmentDelivered`**: El transportista entregó el producto al destinatario final.
-4. **`ShipmentCancelled`**: Cancelación de orden de despacho.
-5. **`ShipmentFailed`**: Fallo crítico o dirección inaccesible.
-6. **`ShipmentReturned`**: El producto regresó al centro logístico.
+1. **`SHIPMENT_CREATED`**: Despacho creado con éxito.
+2. **`SHIPMENT_IN_TRANSIT`**: El despacho ha salido de bodega física.
+3. **`SHIPMENT_DELIVERED`**: El transportista entregó el producto al destinatario final.
+4. **`SHIPMENT_CANCELLED`**: Cancelación de orden de despacho.
+5. **`SHIPMENT_FAILED`**: Fallo crítico o dirección inaccesible.
+6. **`SHIPMENT_RETURNED`**: El producto regresó al centro logístico.

@@ -147,7 +147,7 @@ error_responses = {
     500: {"model": ErrorResponse}
 }
 
-@app.post("/api/v2/shipments/quotes", response_model=QuoteResponse, responses=error_responses)
+@app.post("/api/v1/shipments/quotes", response_model=QuoteResponse, responses=error_responses)
 async def quote_shipment(request: QuoteRequest):
     total_cost = 0
     for pkg in request.packages:
@@ -156,7 +156,7 @@ async def quote_shipment(request: QuoteRequest):
     return QuoteResponse(total_shipping_cost={"amount": total_cost, "currency": "CLP"})
 
 
-@app.post("/api/v2/shipments", response_model=ShipmentCreateResponse, status_code=status.HTTP_201_CREATED, responses=error_responses, dependencies=[Depends(verify_headers)])
+@app.post("/api/v1/shipments", response_model=ShipmentCreateResponse, status_code=status.HTTP_201_CREATED, responses=error_responses, dependencies=[Depends(verify_headers)])
 async def create_shipment(request: Request, shipment_data: ShipmentCreate, db: Session = Depends(get_db)):
     correlation_id = get_correlation_id(request)
             
@@ -214,11 +214,16 @@ async def create_shipment(request: Request, shipment_data: ShipmentCreate, db: S
             "producer": "g6-despacho",
             "correlationId": correlation_id,
             "payload": {
-                "packageIndex": idx,
-                "totalPackages": total_packages,
                 "shipmentId": shipment_id,
                 "orderId": shipment_data.order_id,
-                "newStatus": ShipmentStatus.PENDING.value
+                "customerName": shipment_data.customer_name,
+                "address": shipment_data.address,
+                "city": shipment_data.city,
+                "weightKg": pkg.weight_kg,
+                "status": ShipmentStatus.PENDING.value,
+                "estimatedDelivery": estimated.isoformat() if estimated else None,
+                "packageIndex": idx,
+                "totalPackages": total_packages
             }
         }
         outbox_event = OutboxEvent(
@@ -257,7 +262,7 @@ def _format_shipment(s: Shipment) -> dict:
     }
 
 
-@app.get("/api/v2/shipments", response_model=Union[ShipmentListResponse, List[ShipmentResponse]], responses=error_responses, dependencies=[Depends(verify_headers)])
+@app.get("/api/v1/shipments", response_model=Union[ShipmentListResponse, List[ShipmentResponse]], responses=error_responses, dependencies=[Depends(verify_headers)])
 async def get_shipments(
     request: Request,
     order_id: Optional[str] = Query(None, alias="orderId"),
@@ -323,7 +328,7 @@ async def get_shipments(
     )
 
 
-@app.get("/api/v2/shipments/{shipment_id}", response_model=ShipmentResponse, responses=error_responses, dependencies=[Depends(verify_headers)])
+@app.get("/api/v1/shipments/{shipment_id}", response_model=ShipmentResponse, responses=error_responses, dependencies=[Depends(verify_headers)])
 async def get_shipment_by_id(request: Request, shipment_id: str, db: Session = Depends(get_db)):
     correlation_id = get_correlation_id(request)
     
@@ -339,7 +344,7 @@ async def get_shipment_by_id(request: Request, shipment_id: str, db: Session = D
     return _format_shipment(shipment)
 
 
-@app.patch("/api/v2/shipments/{shipment_id}", response_model=ShipmentUpdateResponse, responses=error_responses, dependencies=[Depends(verify_headers)])
+@app.patch("/api/v1/shipments/{shipment_id}", response_model=ShipmentUpdateResponse, responses=error_responses, dependencies=[Depends(verify_headers)])
 async def update_shipment_status(request: Request, shipment_id: str, update_data: ShipmentUpdate, db: Session = Depends(get_db)):
     correlation_id = get_correlation_id(request)
     
@@ -396,6 +401,16 @@ async def update_shipment_status(request: Request, shipment_id: str, update_data
     
     # 3. Add outbox event
     event_type = f"SHIPMENT_{new_status.upper()}"
+    
+    # Calcular packageIndex y totalPackages para entregas parciales
+    all_shipments = db.query(Shipment).filter(
+        Shipment.order_id == shipment.order_id
+    ).order_by(Shipment.created_at.asc()).all()
+    total_packages = len(all_shipments)
+    package_index = next(
+        (i for i, s in enumerate(all_shipments, 1) if s.shipment_id == shipment_id), 1
+    )
+    
     event_payload = {
         "eventId": str(uuid.uuid4()),
         "eventType": event_type,
@@ -406,8 +421,12 @@ async def update_shipment_status(request: Request, shipment_id: str, update_data
         "payload": {
             "shipmentId": shipment_id,
             "orderId": shipment.order_id,
+            "customerName": shipment.customer_name,
+            "city": shipment.city,
             "newStatus": new_status,
-            "previousStatus": current_status
+            "previousStatus": current_status,
+            "packageIndex": package_index,
+            "totalPackages": total_packages
         }
     }
     outbox_event = OutboxEvent(
@@ -433,7 +452,7 @@ async def update_shipment_status(request: Request, shipment_id: str, update_data
     )
 
 
-@app.get("/api/v2/shipments/{shipment_id}/history", response_model=ShipmentHistoryResponse, responses=error_responses, dependencies=[Depends(verify_headers)])
+@app.get("/api/v1/shipments/{shipment_id}/history", response_model=ShipmentHistoryResponse, responses=error_responses, dependencies=[Depends(verify_headers)])
 async def get_shipment_history(request: Request, shipment_id: str, db: Session = Depends(get_db)):
     correlation_id = get_correlation_id(request)
     

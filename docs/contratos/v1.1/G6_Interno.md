@@ -54,9 +54,9 @@ CREATE TABLE shipment_status_history (
 ```
 
 ### 2.3 Tabla de Resiliencia: `outbox_events`
-**Patrón Outbox:** Para evitar que un evento se pierda si Kafka/Event Broker se cae, no publicamos el evento directamente desde el controlador REST.
+**Patrón Outbox:** Para evitar que un evento se pierda si GCP Pub/Sub se cae, no publicamos el evento directamente desde el controlador REST.
 1. Insertamos en `outbox_events` (status `PENDING`) en la misma transacción SQL que el update de `shipments`.
-2. Un Cron Job/Worker lee esta tabla y publica al Broker, marcando como `PUBLISHED`.
+2. Un Cron Job/Worker lee esta tabla y publica a GCP Pub/Sub, marcando como `PUBLISHED`.
 
 ```sql
 CREATE TABLE outbox_events (
