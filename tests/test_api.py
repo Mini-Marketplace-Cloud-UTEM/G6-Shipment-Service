@@ -74,10 +74,9 @@ def test_quote_validation_error():
         ]
     }
     response = client.post("/api/v1/shipments/quotes", json=payload)
-    assert response.status_code == 422
+    assert response.status_code == 400
     data = response.json()
-    assert data["code"] == "VALIDATION_ERROR"
-    assert "details" in data
+    assert data["code"] == "BAD_REQUEST"
 
 def test_openapi_is_up_to_date():
     import yaml

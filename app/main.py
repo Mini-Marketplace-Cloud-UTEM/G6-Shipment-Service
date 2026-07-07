@@ -149,11 +149,24 @@ error_responses = {
 
 @app.post("/api/v1/shipments/quotes", response_model=QuoteResponse, responses=error_responses)
 async def quote_shipment(request: QuoteRequest):
-    total_cost = 0
-    for pkg in request.packages:
-        _, cost = calculate_shipping_cost(request.city, pkg.origin_cd.value, pkg.weight_kg, pkg.dimensions_cm)
-        total_cost += cost
-    return QuoteResponse(total_shipping_cost={"amount": total_cost, "currency": "CLP"})
+    # Modo 1: Oficial (con ciudad y paquetes)
+    if request.city and request.packages:
+        total_cost = 0
+        for pkg in request.packages:
+            _, cost = calculate_shipping_cost(request.city, pkg.origin_cd.value, pkg.weight_kg, pkg.dimensions_cm)
+            total_cost += cost
+        return QuoteResponse(total_shipping_cost={"amount": total_cost, "currency": "CLP"})
+    
+    # Modo 2: Parche de Integración (Solo con monto total)
+    elif request.order_total_amount is not None and request.order_total_amount > 0:
+        total_cost = int(request.order_total_amount * 0.05)
+        return QuoteResponse(total_shipping_cost={"amount": total_cost, "currency": "CLP"})
+    
+    # Error: Faltan datos para cualquier modo
+    raise StarletteHTTPException(
+        status_code=400,
+        detail="Debe proveer 'city' y 'packages' (modo oficial) o 'order_total_amount' (modo parche)."
+    )
 
 
 @app.post("/api/v1/shipments", response_model=ShipmentCreateResponse, status_code=status.HTTP_201_CREATED, responses=error_responses, dependencies=[Depends(verify_headers)])

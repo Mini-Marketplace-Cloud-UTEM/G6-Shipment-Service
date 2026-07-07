@@ -372,31 +372,54 @@ $$ \text{Costo Total} = \sum_{i=1}^{n} \left( \text{Costo Base}_i + (\text{Peso 
 % ══════════════════════════════════════════════════════════════════════════════
 
 % ── POST /shipments/quotes ───────────────────────────────────────────────────
-\subsection{Cotizar Envío (Tarifa Consolidada)}
+\subsection{Cotizar Envíos (Tarifa Consolidada)}
 
 \routeheader{post}{POST}{/api/v1/shipments/quotes}
 
-\textbf{Descripción:} Calcula la tarifa consolidada de un conjunto de paquetes. Usado por \textbf{G4 (Checkout)} antes de confirmar la compra. No guarda en base de datos.
+\textbf{Descripción:} Endpoint inteligente que cotiza envíos. Acepta dos modos de operación debido a dependencias con G4.
 
 \vspace{0.3cm}
-\textbf{Request Body} (\texttt{application/json}):
+\textbf{Modo 1: Oficial (Cálculo Volumétrico Real)}
 
+Requiere que G4 consolide volumetría (G3) y destino (G1).
+Fórmula: \texttt{Peso Volumétrico (kg) = (Largo\_cm * Ancho\_cm * Alto\_cm) / 4000}.
+
+\textbf{Request Body} (\texttt{application/json}):
 \begin{lstlisting}
 {
   "city": "Santiago",
   "packages": [
-    { "originCd": "NORTE", "weightKg": 2.0, "dimensionsCm": { "length": 40, "width": 30, "height": 20 } },
-    { "originCd": "CENTRO", "weightKg": 1.0, "dimensionsCm": { "length": 15, "width": 10, "height": 5 } }
+    {
+      "originCd": "NORTE",
+      "weightKg": 2.5,
+      "dimensionsCm": { "length": 40, "width": 30, "height": 20 }
+    }
   ]
 }
 \end{lstlisting}
 
-\textbf{Response --- 200 OK:}
+\vspace{0.3cm}
+\textbf{Modo 2: Parche Temporal (Fallback 5\%)}
+
+Si G4 no cuenta con dimensiones o ciudad, se acepta el monto total de la orden (int64). El endpoint cobrará un 5\% fijo.
+\textit{Nota: Parche habilitado de forma temporal para destrabar la integración E4.}
+
+\textbf{Request Body} (\texttt{application/json}):
+\begin{lstlisting}
+{
+  "orderTotalAmount": 15000
+}
+\end{lstlisting}
+
+\vspace{0.3cm}
+\textbf{Response --- 200 OK (Ambos Modos):}
 
 \begin{lstlisting}
 {
-  "totalShippingCost": 10100,
-  "currency": "CLP"
+  "totalShippingCost": {
+    "amount": 750,
+    "currency": "CLP"
+  }
 }
 \end{lstlisting}
 
@@ -470,41 +493,7 @@ $$ \text{Costo Total} = \sum_{i=1}^{n} \left( \text{Costo Base}_i + (\text{Peso 
 \noindent\rule{\textwidth}{0.4pt}
 
 
-\noindent\rule{\textwidth}{0.4pt}
 
-% ── POST /shipments/quotes ───────────────────────────────────────────────────
-\subsection{Cotizar Envíos}
-
-\routeheader{post}{POST}{/api/v1/shipments/quotes}
-
-\textbf{Descripción:} Cotiza envíos según peso volumétrico y orígenes. Llamado por \textbf{G4 (Inventario y Checkout)}.
-Fórmula: \texttt{Peso Volumétrico (kg) = (Largo\_cm * Ancho\_cm * Alto\_cm) / 4000}.
-
-\vspace{0.3cm}
-\textbf{Request Body} (\texttt{application/json}):
-
-\begin{lstlisting}
-{
-  "city": "Santiago",
-  "address": "Av. Providencia 1234",
-  "packages": [
-    {
-      "originCd": "NORTE",
-      "weightKg": 2.5,
-      "dimensionsCm": { "length": 40, "width": 30, "height": 20 }
-    }
-  ]
-}
-\end{lstlisting}
-
-\textbf{Response --- 200 OK:}
-
-\begin{lstlisting}
-{
-  "totalShippingCost": 6600,
-  "currency": "CLP"
-}
-\end{lstlisting}
 
 % ── GET /shipments/{id} ──────────────────────────────────────────────────────
 \subsection{Consultar Despacho por ID}

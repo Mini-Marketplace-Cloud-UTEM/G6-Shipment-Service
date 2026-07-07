@@ -620,18 +620,28 @@ components:
     QuoteRequest:
       properties:
         city:
-          type: string
-          maxLength: 100
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
           title: City
+          description: Ciudad de destino (Modo Oficial)
         packages:
-          items:
-            $ref: '#/components/schemas/PackageInput'
-          type: array
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/PackageInput'
+            type: array
+          - type: 'null'
           title: Packages
+          description: Lista de paquetes físicos (Modo Oficial)
+        orderTotalAmount:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Ordertotalamount
+          description: Monto total de la orden. Usado como parche de contingencia
+            (5% de cobro) si no vienen city ni packages.
       type: object
-      required:
-      - city
-      - packages
       title: QuoteRequest
     QuoteResponse:
       properties:
@@ -831,7 +841,8 @@ components:
     ShipmentUpdate:
       properties:
         status:
-          $ref: '#/components/schemas/ShipmentStatus'
+          allOf:
+          - $ref: '#/components/schemas/ShipmentStatus'
           description: Nuevo estado para la transición
       type: object
       required:

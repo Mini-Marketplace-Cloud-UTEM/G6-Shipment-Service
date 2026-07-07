@@ -34,8 +34,9 @@ class PackageInput(CamelModel):
     dimensions_cm: DimensionsCm
 
 class QuoteRequest(CamelModel):
-    city: str = Field(..., max_length=100)
-    packages: List[PackageInput]
+    city: Optional[str] = Field(None, max_length=100, description="Ciudad de destino (Modo Oficial)")
+    packages: Optional[List[PackageInput]] = Field(None, description="Lista de paquetes físicos (Modo Oficial)")
+    order_total_amount: Optional[int] = Field(None, description="Monto total de la orden. Usado como parche de contingencia (5% de cobro) si no vienen city ni packages.")
 
 class Money(CamelModel):
     amount: int = Field(..., description="Monto en int64")
