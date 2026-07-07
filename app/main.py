@@ -210,6 +210,7 @@ async def quote_shipment(
 @app.post("/api/v1/shipments", response_model=ShipmentCreateResponse, status_code=status.HTTP_201_CREATED, responses=error_responses, dependencies=[Depends(verify_headers)])
 async def create_shipment(request: Request, shipment_data: ShipmentCreate, db: Session = Depends(get_db)):
     correlation_id = get_correlation_id(request)
+    logger.info(f"[corr_id: {correlation_id}] POST /api/v1/shipments - Creando nuevo despacho para orden: {shipment_data.order_id}")
             
     now = datetime.now(timezone.utc)
     estimated = now + timedelta(days=3)
@@ -398,6 +399,7 @@ async def get_shipment_by_id(request: Request, shipment_id: str, db: Session = D
 @app.patch("/api/v1/shipments/{shipment_id}", response_model=ShipmentUpdateResponse, responses=error_responses, dependencies=[Depends(verify_headers)])
 async def update_shipment_status(request: Request, shipment_id: str, update_data: ShipmentUpdate, db: Session = Depends(get_db)):
     correlation_id = get_correlation_id(request)
+    logger.info(f"[corr_id: {correlation_id}] PATCH /api/v1/shipments/{shipment_id} - Actualizando estado a {update_data.status.value}")
     
     shipment = db.query(Shipment).filter(Shipment.shipment_id == shipment_id).first()
     if not shipment:

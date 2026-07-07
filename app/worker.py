@@ -107,11 +107,13 @@ def publish_pending_events() -> int:
                 )
                 db.commit()
                 published_count += 1
+                correlation = payload.get("correlationId", "N/A")
                 logger.info(
-                    "✓ Evento #%d (%s) publicado — message_id=%s",
+                    "✓ Evento #%d (%s) publicado — message_id=%s [corr_id: %s]",
                     event_id,
                     event_type,
                     message_id,
+                    correlation
                 )
 
             except Exception as pub_err:
