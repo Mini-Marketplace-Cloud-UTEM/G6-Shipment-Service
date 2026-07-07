@@ -18,11 +18,17 @@ aplican únicamente a lo que un grupo expone hacia afuera.
 
 ## 2. Dinero
 
-- Todo monto se expresa siempre como `integer`. Nunca `float`/`double`.
+- **Actualizado 2026-06-28, por requerimiento del evaluador de la
+  asignatura:** todo monto se expresa como **entero de 64 bits**
+  (`integer` / `format: int64`, conocido como `long` en Java/C#/etc.).
+  **Sigue siendo entero — nunca `number`/`float`/`double`.** Lo único que
+  cambia es el ancho (antes 32 bits, ahora 64) para evitar overflow en
+  montos grandes. Todos los grupos deben migrar su contrato y su código
+  a este ancho.
 - La moneda es siempre `CLP` — el enum permitido es `[CLP]`, sin otras
   monedas.
 - Ver el esquema `Money` en `shared/components.yaml` para la forma
-  exacta (`{ amount: integer, currency: "CLP" }`).
+  exacta (`{ amount: integer (int64), currency: "CLP" }`).
 
 ## 3. Forma de error
 
@@ -133,7 +139,7 @@ se refieran exactamente a los mismos campos.
 | `id` | uuid |
 | `name` | string |
 | `description` | string |
-| `price` | `Money` (integer + CLP) |
+| `price` | `Money` (int64 + CLP) |
 | `stock` | integer |
 | `categoryId` / `categoryName` | uuid / string |
 | `sku` | string |
@@ -172,7 +178,7 @@ se refieran exactamente a los mismos campos.
 | `userId` | uuid |
 | `status` | enum (ver tabla de mapeo de estados) |
 | `items[]` | array de `OrderItem` |
-| `totalAmount`, `subtotal`, `shippingCost` | `Money` (integer, CLP) |
+| `totalAmount`, `subtotal`, `shippingCost` | `Money` (int64, CLP) |
 | `shippingAddress` | objeto (street/city/region/country/postalCode) |
 | `createdAt`/`updatedAt` | date-time |
 
@@ -197,7 +203,7 @@ se refieran exactamente a los mismos campos.
 | `customerName`, `address`, `city` | string |
 | `originCd` | `NORTE/CENTRO/SUR` |
 | `weightKg`, `volumetricWeight` | number |
-| `shippingCost` | `Money` (integer, CLP) |
+| `shippingCost` | `Money` (int64, CLP) |
 | `status` | `PENDING/IN_TRANSIT/DELIVERED/CANCELLED/FAILED/RETURNED` |
 | `estimatedDelivery` | date-time, nullable |
 
