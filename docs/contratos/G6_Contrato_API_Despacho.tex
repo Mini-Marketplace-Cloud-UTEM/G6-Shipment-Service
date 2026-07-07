@@ -89,7 +89,7 @@
 \pagestyle{fancy}
 \fancyhf{}
 \fancyhead[L]{\small\textcolor{primary}{\textbf{Grupo 6} --- Contrato API Despacho y Logística}}
-\fancyhead[R]{\small\textcolor{primary}{v1.3}}
+\fancyhead[R]{\small\textcolor{primary}{v1.4}}
 \fancyfoot[C]{\small\textcolor{gray}{\thepage}}
 \renewcommand{\headrulewidth}{0.4pt}
 
@@ -123,7 +123,7 @@
 
 \begin{tabular}{rl}
   \textbf{Proyecto:}     & Marketplace en la Nube \\
-  \textbf{Versión API:}  & \texttt{v1.3} \\
+  \textbf{Versión API:}  & \texttt{v1.4} \\
   \textbf{Base URL:}     & \texttt{https://g6-despacho.onrender.com/api/v1} \\
   \textbf{Fecha:}        & 17 de Junio de 2026 \\
 \end{tabular}
@@ -173,7 +173,7 @@ El servicio de \textbf{Despacho y Logística (G6)} es responsable de gestionar e
 
 \begin{table}[h!]
 \centering
-\renewcommand{\arraystretch}{1.3}
+\renewcommand{\arraystretch}{1.4}
 \begin{tabularx}{\textwidth}{l l l X}
   \toprule
   \textbf{Dato} & \textbf{Dueño} & \textbf{Acceso G6} & \textbf{Observación} \\
@@ -252,7 +252,7 @@ El servicio de \textbf{Despacho y Logística (G6)} es responsable de gestionar e
 
 \begin{table}[h!]
 \centering
-\renewcommand{\arraystretch}{1.3}
+\renewcommand{\arraystretch}{1.4}
 \begin{tabularx}{\textwidth}{l l l c X}
   \toprule
   \textbf{Campo} & \textbf{Tipo} & \textbf{Ejemplo} & \textbf{Req.} & \textbf{Descripción} \\
@@ -320,7 +320,7 @@ Estados almacenados en la tabla \texttt{shipments}.
 
 \begin{table}[h!]
 \centering
-\renewcommand{\arraystretch}{1.3}
+\renewcommand{\arraystretch}{1.4}
 \begin{tabularx}{\textwidth}{l l l X}
   \toprule
   \textbf{Estado} & \textbf{Valor} & \textbf{Tipo} & \textbf{Transiciones válidas} \\
@@ -718,7 +718,7 @@ Todos los errores siguen el mismo formato base. Opcionalmente, se puede incluir 
 
 \begin{table}[h!]
 \centering
-\renewcommand{\arraystretch}{1.3}
+\renewcommand{\arraystretch}{1.4}
 \begin{tabularx}{\textwidth}{l l X}
   \toprule
   \textbf{status} & \textbf{code} & \textbf{Uso} \\
@@ -741,7 +741,7 @@ Todos los errores siguen el mismo formato base. Opcionalmente, se puede incluir 
 
 \section{Mecanismo de Comunicación (Pub/Sub)}
 
-La arquitectura de eventos se basa en un modelo \textbf{Pub/Sub} (Publish/Subscribe) utilizando un \textbf{Event Broker} (ej. Upstash Kafka o Supabase Realtime). 
+La arquitectura de eventos se basa en un modelo \textbf{Pub/Sub} (Publish/Subscribe) utilizando un \textbf{GCP Pub/Sub} (ej. Upstash GCP Pub/Sub o Supabase Realtime). 
 Esto permite desacoplar los servicios y procesar los eventos de forma 100\% asíncrona.
 
 \subsection{Flujo de Eventos}
@@ -764,20 +764,20 @@ Todos los eventos emitidos por G6 siguen esta estructura. Cada vez que un despac
 \begin{lstlisting}
 {
   "eventId": "evt-550e8400-e29b-41d4-a716-446655440000",
-  "eventType": "ShipmentDelivered",
+  "eventType": "SHIPMENT_DELIVERED",
   "version": "1.0",
   "occurredAt": "2026-06-11T15:00:00Z",
   "producer": "g6-despacho",
   "correlationId": "req-123e4567",
   "payload": {
-    \"package_index\": 1,
-    \"total_packages\": 2, ... }
+    \"packageIndex\": 1,
+    \"totalPackages\": 2, ... }
 }
 \end{lstlisting}
 
 \begin{table}[h!]
 \centering
-\renewcommand{\arraystretch}{1.3}
+\renewcommand{\arraystretch}{1.4}
 \begin{tabularx}{\textwidth}{l l X}
   \toprule
   \textbf{Campo} & \textbf{Tipo} & \textbf{Descripción} \\
@@ -797,24 +797,24 @@ Todos los eventos emitidos por G6 siguen esta estructura. Cada vez que un despac
 
 \section{Catálogo de Eventos}
 
-% ── ShipmentCreated ──────────────────────────────────────────────────────────
-\subsection{ShipmentCreated}
+% ── SHIPMENT_CREATED ──────────────────────────────────────────────────────────
+\subsection{SHIPMENT_CREATED}
 
 Se emite cuando G5 crea exitosamente un nuevo despacho.
 
-\contractheader{ShipmentCreated}
+\contractheader{SHIPMENT_CREATED}
 
 \begin{lstlisting}
 {
   "eventId": "evt-550e8400-e29b-41d4-a716-446655440001",
-  "eventType": "ShipmentCreated",
+  "eventType": "SHIPMENT_CREATED",
   "version": "1.0",
   "occurredAt": "2026-06-11T14:00:00Z",
   "producer": "g6-despacho",
   "correlationId": "req-123e4567",
   "payload": {
-    \"package_index\": 1,
-    \"total_packages\": 2,
+    \"packageIndex\": 1,
+    \"totalPackages\": 2,
     "shipmentId": "SHP-a1b2c3d4",
     "orderId": "ORD-20260611-001",
     "customerName": "María González",
@@ -831,24 +831,24 @@ Se emite cuando G5 crea exitosamente un nuevo despacho.
 
 \vspace{0.4cm}
 
-% ── ShipmentInTransit ────────────────────────────────────────────────────────
-\subsection{ShipmentInTransit}
+% ── SHIPMENT_IN_TRANSIT ────────────────────────────────────────────────────────
+\subsection{SHIPMENT_IN_TRANSIT}
 
 Se emite cuando el paquete sale a reparto.
 
-\contractheader{ShipmentInTransit}
+\contractheader{SHIPMENT_IN_TRANSIT}
 
 \begin{lstlisting}
 {
   "eventId": "evt-550e8400-e29b-41d4-a716-446655440002",
-  "eventType": "ShipmentInTransit",
+  "eventType": "SHIPMENT_IN_TRANSIT",
   "version": "1.0",
   "occurredAt": "2026-06-11T14:30:00Z",
   "producer": "g6-despacho",
   "correlationId": "req-123e4567",
   "payload": {
-    \"package_index\": 1,
-    \"total_packages\": 2,
+    \"packageIndex\": 1,
+    \"totalPackages\": 2,
     "shipmentId": "SHP-a1b2c3d4",
     "orderId": "ORD-20260611-001",
     "previousStatus": "PENDING",
@@ -863,24 +863,24 @@ Se emite cuando el paquete sale a reparto.
 
 \vspace{0.4cm}
 
-% ── ShipmentDelivered ────────────────────────────────────────────────────────
-\subsection{ShipmentDelivered}
+% ── SHIPMENT_DELIVERED ────────────────────────────────────────────────────────
+\subsection{SHIPMENT_DELIVERED}
 
 Se emite cuando el paquete es entregado exitosamente.
 
-\contractheader{ShipmentDelivered}
+\contractheader{SHIPMENT_DELIVERED}
 
 \begin{lstlisting}
 {
   "eventId": "evt-550e8400-e29b-41d4-a716-446655440003",
-  "eventType": "ShipmentDelivered",
+  "eventType": "SHIPMENT_DELIVERED",
   "version": "1.0",
   "occurredAt": "2026-06-11T15:00:00Z",
   "producer": "g6-despacho",
   "correlationId": "req-123e4567",
   "payload": {
-    \"package_index\": 1,
-    \"total_packages\": 2,
+    \"packageIndex\": 1,
+    \"totalPackages\": 2,
     "shipmentId": "SHP-a1b2c3d4",
     "orderId": "ORD-20260611-001",
     "previousStatus": "IN_TRANSIT",
@@ -896,24 +896,24 @@ Se emite cuando el paquete es entregado exitosamente.
 
 \vspace{0.4cm}
 
-% ── ShipmentCancelled ────────────────────────────────────────────────────────
-\subsection{ShipmentCancelled}
+% ── SHIPMENT_CANCELLED ────────────────────────────────────────────────────────
+\subsection{SHIPMENT_CANCELLED}
 
 Se emite cuando un despacho es cancelado antes de salir a reparto.
 
-\contractheader{ShipmentCancelled}
+\contractheader{SHIPMENT_CANCELLED}
 
 \begin{lstlisting}
 {
   "eventId": "evt-550e8400-e29b-41d4-a716-446655440004",
-  "eventType": "ShipmentCancelled",
+  "eventType": "SHIPMENT_CANCELLED",
   "version": "1.0",
   "occurredAt": "2026-06-11T14:10:00Z",
   "producer": "g6-despacho",
   "correlationId": "req-123e4567",
   "payload": {
-    \"package_index\": 1,
-    \"total_packages\": 2,
+    \"packageIndex\": 1,
+    \"totalPackages\": 2,
     "shipmentId": "SHP-a1b2c3d4",
     "orderId": "ORD-20260611-001",
     "previousStatus": "PENDING",
@@ -928,24 +928,24 @@ Se emite cuando un despacho es cancelado antes de salir a reparto.
 
 \vspace{0.4cm}
 
-% ── ShipmentFailed ───────────────────────────────────────────────────────────
-\subsection{ShipmentFailed}
+% ── SHIPMENT_FAILED ───────────────────────────────────────────────────────────
+\subsection{SHIPMENT_FAILED}
 
 Se emite cuando un intento de entrega falla.
 
-\contractheader{ShipmentFailed}
+\contractheader{SHIPMENT_FAILED}
 
 \begin{lstlisting}
 {
   "eventId": "evt-550e8400-e29b-41d4-a716-446655440005",
-  "eventType": "ShipmentFailed",
+  "eventType": "SHIPMENT_FAILED",
   "version": "1.0",
   "occurredAt": "2026-06-11T16:00:00Z",
   "producer": "g6-despacho",
   "correlationId": "req-123e4567",
   "payload": {
-    \"package_index\": 1,
-    \"total_packages\": 2,
+    \"packageIndex\": 1,
+    \"totalPackages\": 2,
     "shipmentId": "SHP-a1b2c3d4",
     "orderId": "ORD-20260611-001",
     "previousStatus": "IN_TRANSIT",
@@ -960,24 +960,24 @@ Se emite cuando un intento de entrega falla.
 
 \vspace{0.4cm}
 
-% ── ShipmentReturned ─────────────────────────────────────────────────────────
-\subsection{ShipmentReturned}
+% ── SHIPMENT_RETURNED ─────────────────────────────────────────────────────────
+\subsection{SHIPMENT_RETURNED}
 
 Se emite cuando un paquete entregado es devuelto.
 
-\contractheader{ShipmentReturned}
+\contractheader{SHIPMENT_RETURNED}
 
 \begin{lstlisting}
 {
   "eventId": "evt-550e8400-e29b-41d4-a716-446655440006",
-  "eventType": "ShipmentReturned",
+  "eventType": "SHIPMENT_RETURNED",
   "version": "1.0",
   "occurredAt": "2026-06-12T10:00:00Z",
   "producer": "g6-despacho",
   "correlationId": "req-123e4567",
   "payload": {
-    \"package_index\": 1,
-    \"total_packages\": 2,
+    \"packageIndex\": 1,
+    \"totalPackages\": 2,
     "shipmentId": "SHP-a1b2c3d4",
     "orderId": "ORD-20260611-001",
     "previousStatus": "DELIVERED",
@@ -1050,25 +1050,25 @@ Define \textbf{qué datos le enviamos a G8} en cada cambio de estado.
 \begin{enumerate}[noitemsep]
   \item Un shipment cambia de estado (vía PATCH o simulación).
   \item Construimos el evento JSON correspondiente.
-  \item Publicamos el evento en el tópico \texttt{shipment-events} del Event Broker.
+  \item Publicamos el evento en el tópico \texttt{shipment-events} del GCP Pub/Sub.
   \item G8 consume el evento desde el tópico y notifica al usuario final.
 \end{enumerate}
 
-\subsection{JSON que G6 publica en el Event Broker (para G8)}
+\subsection{JSON que G6 publica en el GCP Pub/Sub (para G8)}
 
 \contractheader{Evento publicado por G6 (ejemplo: entrega)}
 
 \begin{lstlisting}
 {
   "eventId": "evt-550e8400-e29b-41d4-a716-446655440003",
-  "eventType": "ShipmentDelivered",
+  "eventType": "SHIPMENT_DELIVERED",
   "version": "1.0",
   "occurredAt": "2026-06-11T15:00:00Z",
   "producer": "g6-despacho",
   "correlationId": "req-123e4567",
   "payload": {
-    \"package_index\": 1,
-    \"total_packages\": 2,
+    \"packageIndex\": 1,
+    \"totalPackages\": 2,
     "shipmentId": "SHP-a1b2c3d4",
     "orderId": "ORD-20260611-001",
     "previousStatus": "IN_TRANSIT",
@@ -1088,7 +1088,7 @@ Define \textbf{qué datos le enviamos a G8} en cada cambio de estado.
     ninguna respuesta directa ni código HTTP de parte de G8.
   \item \textbf{Acuse de recibo (ACK):} Una vez procesada la información
     localmente por su lógica interna, el componente consumidor de G8 emitirá un
-    \textbf{ACK} (\textit{Acknowledgment}) automático hacia el Event Broker para
+    \textbf{ACK} (\textit{Acknowledgment}) automático hacia el GCP Pub/Sub para
     confirmar la recepción exitosa y permitir la liberación del mensaje en la
     cola. Este ACK es una señal de bajo nivel gestionada por la librería del
     Broker, no un payload JSON personalizado.
@@ -1123,7 +1123,7 @@ G7 consume datos para dashboards de rendimiento.
 
 \begin{table}[h!]
 \centering
-\renewcommand{\arraystretch}{1.3}
+\renewcommand{\arraystretch}{1.4}
 \begin{tabularx}{\textwidth}{l X}
   \toprule
   \textbf{Métrica} & \textbf{Cómo la obtienen} \\
@@ -1146,7 +1146,7 @@ G1 consume nuestro endpoint de tracking.
 
 \begin{table}[h!]
 \centering
-\renewcommand{\arraystretch}{1.3}
+\renewcommand{\arraystretch}{1.4}
 \begin{tabularx}{\textwidth}{l X}
   \toprule
   \textbf{Campo} & \textbf{Uso en la UI} \\
@@ -1178,7 +1178,7 @@ G1 consume nuestro endpoint de tracking.
   G5  & G6  & Síncrono  & REST GET     & Consulta por \texttt{order\_id}. \\
   G5  & G6  & Síncrono  & REST PATCH   & Cancelación. \\
   G1  & G6  & Síncrono  & REST GET     & Tracking por \texttt{shipment\_id}. \\
-  G6     & Broker (Kafka/Supabase) & Asíncrono & Publish (Pub)   & Mensaje en tópico \texttt{shipment-events} \\
+  G6     & Broker (GCP Pub/Sub/Supabase) & Asíncrono & Publish (Pub)   & Mensaje en tópico \texttt{shipment-events} \\
   Broker & G8 (Pago Simulado y Notificaciones)     & Asíncrono & Subscribe (Sub) & Consume desde tópico \texttt{shipment-events} \\
   Broker & G7 (Reportería, Batch y Streaming)        & Asíncrono & Subscribe (Sub) & Consume desde tópico \texttt{shipment-events} \\
   G7 & G6  & Síncrono  & REST GET     & Lista para reportes. \\
@@ -1220,8 +1220,8 @@ G1 consume nuestro endpoint de tracking.
   \node[db, below=1.8cm of g6]     (db)  {Supabase};
   \node[tech, below=0.1cm of db]   {[PostgreSQL]};
 
-  % ── Event Broker + consumidores (derecha) ──
-  \node[brokerbox, right=2.8cm of g6] (broker) {Event Broker\\\relax{\tiny[Kafka / Supabase Realtime]}};
+  % ── GCP Pub/Sub + consumidores (derecha) ──
+  \node[brokerbox, right=2.8cm of g6] (broker) {GCP Pub/Sub\\\relax{\tiny[GCP Pub/Sub / Supabase Realtime]}};
   \node[extbox, above=1.8cm of broker] (g8)  {G8 --- Pago Simulado\\y Notificaciones\\\relax{\tiny[Node.js]}};
   \node[extbox, below=1.8cm of broker] (g7)  {G7 --- Reportería,\\Batch y Streaming\\\relax{\tiny[Python / Spark]}};
 
@@ -1292,7 +1292,7 @@ CREATE TABLE shipment_status_history (
 \end{lstlisting}
 
 \subsection{Tabla de Resiliencia: outbox\_events (Patrón Outbox)}
-Mitiga caídas del Event Broker.
+Mitiga caídas del GCP Pub/Sub.
 
 \begin{lstlisting}
 CREATE TABLE outbox_events (
@@ -1317,7 +1317,7 @@ CREATE TABLE outbox_events (
 \begin{enumerate}[noitemsep]
   \item \textbf{Formato de entrada estandarizado:} G5 (Pedidos) envía los datos del pedido con todos los campos obligatorios definidos en el contrato REST (\texttt{order\_id}, \texttt{customer\_name}, \texttt{address}, \texttt{city}, \texttt{weight\_kg}).
   \item \textbf{Idempotencia del \texttt{order\_id}:} Cada pedido genera exactamente un envío. Si G5 reintenta el \texttt{POST}, el sistema rechaza el duplicado con \texttt{409 Conflict}.
-  \item \textbf{Disponibilidad del Event Broker:} El Event Broker (Kafka o Supabase Realtime) está operativo y accesible. La publicación de eventos es \emph{at-least-once}.
+  \item \textbf{Disponibilidad del GCP Pub/Sub:} El GCP Pub/Sub (GCP Pub/Sub o Supabase Realtime) está operativo y accesible. La publicación de eventos es \emph{at-least-once}.
   \item \textbf{Base de datos centralizada:} G6 es el único grupo que escribe en la tabla \texttt{shipments}. Otros grupos solo consultan vía REST.
   \item \textbf{Conectividad cloud:} Todos los servicios se despliegan en la nube y se comunican a través de HTTPS o protocolo de mensajería seguro.
   \item \textbf{Autenticación delegada:} La autenticación del usuario final la gestiona G1/G8. G6 confía en los headers \texttt{X-Consumer} y \texttt{X-Correlation-Id} para trazabilidad.
@@ -1332,7 +1332,7 @@ CREATE TABLE outbox_events (
   \toprule
   \textbf{ID} & \textbf{Riesgo} & \textbf{Mitigación} & \textbf{Impacto} \\
   \midrule
-  R1 & Caída del Event Broker impide que G8 notifique al usuario final. & Cola de reintentos con backoff exponencial; tabla \texttt{outbox} local para eventos pendientes. & Alto \\
+  R1 & Caída del GCP Pub/Sub impide que G8 notifique al usuario final. & Cola de reintentos con backoff exponencial; tabla \texttt{outbox} local para eventos pendientes. & Alto \\
   R2 & G5 envía datos incompletos o con formato inválido. & Validación estricta en el endpoint \texttt{POST /shipments} con retorno \texttt{422} y mensaje descriptivo. & Medio \\
   R3 & Duplicación de envíos por reintentos de G5 sin \texttt{Idempotency-Key}. & Verificación estricta mediante \texttt{Idempotency-Key} a nivel de base de datos. & Medio \\
   R4 & Latencia alta en la base de datos Supabase por volumen de consultas de G7. & Índices en \texttt{status} y \texttt{created\_at}; endpoint paginado con \texttt{limit/offset}. & Medio \\
@@ -1371,3 +1371,5 @@ Todos los errores retornados por la API siguen la estructura estándar definida 
 
 
 \end{document}
+
+

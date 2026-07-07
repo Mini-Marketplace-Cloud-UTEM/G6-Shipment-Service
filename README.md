@@ -30,17 +30,10 @@ El repositorio está organizado de la siguiente manera:
   * [`models.py`](app/models.py): Modelos SQLAlchemy (PostgreSQL).
   * [`database.py`](app/database.py): Conexión a Supabase.
 * **[`docs/`](docs/)**: Documentación técnica oficial.
-  * [`contratos/`](docs/contratos/): Contrato de la API REST, eventos, C4 y matriz de dependencias.
-    * [`v1.0/`](docs/contratos/v1.0/): Versión inicial del contrato.
-      * 📑 **[G6_Contrato_API_Despacho.pdf](docs/contratos/v1.0/G6_Contrato_API_Despacho.pdf)**: Documento compilado final.
-      * 📄 [G6_Contrato_API_Despacho.tex](docs/contratos/v1.0/G6_Contrato_API_Despacho.tex): Código fuente en LaTeX.
-    * [`v1.1/`](docs/contratos/v1.1/): Soporte Multi-Origen y Tarifas Volumétricas (Histórico).
-      * 📑 **[G6_Contrato_API_Despacho_v1.1.pdf](docs/contratos/v1.1/G6_Contrato_API_Despacho_v1.1.pdf)**
-      * 📄 [G6_Contrato_API_Despacho_v1.1.tex](docs/contratos/v1.1/G6_Contrato_API_Despacho_v1.1.tex)
-      * Archivos Markdown individuales para la integración de cada grupo (`G1_Frontend.md`, `G4_Inventario_Checkout.md`, etc.).
-    * [`v1.2/`](docs/contratos/v1.2/): Alineación de paginación y esquema de errores unificado (Actual).
-      * 📑 **[G6_Contrato_API_Despacho_v1.2.pdf](docs/contratos/v1.2/G6_Contrato_API_Despacho_v1.2.pdf)**: Documento compilado final.
-      * 📄 [G6_Contrato_API_Despacho_v1.2.tex](docs/contratos/v1.2/G6_Contrato_API_Despacho_v1.2.tex): Código fuente en LaTeX.
+  * [`contratos/`](docs/contratos/): Contratos de la API REST y eventos.
+    * 📑 **[G6_Contrato_API_Despacho.pdf](docs/contratos/G6_Contrato_API_Despacho.pdf)**: Documento compilado final (Consolidado v1.4).
+    * 📄 [G6_Contrato_API_Despacho.tex](docs/contratos/G6_Contrato_API_Despacho.tex): Código fuente en LaTeX.
+    * Archivos Markdown individuales para la integración de cada grupo (`G1_Frontend.md`, `G4_Inventario_Checkout.md`, etc.).
   * [`briefing/`](docs/briefing/): Briefing técnico del servicio.
     * 📑 **[G6_Logistica_Briefing.pdf](docs/briefing/G6_Logistica_Briefing.pdf)**: Documento compilado final.
     * 📄 [G6_Logistica_Briefing.tex](docs/briefing/G6_Logistica_Briefing.tex): Código fuente en LaTeX.
