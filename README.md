@@ -37,7 +37,7 @@ El repositorio está organizado de la siguiente manera:
   * [`briefing/`](docs/briefing/): Briefing técnico del servicio.
     * 📑 **[G6_Logistica_Briefing.pdf](docs/briefing/G6_Logistica_Briefing.pdf)**: Documento compilado final.
     * 📄 [G6_Logistica_Briefing.tex](docs/briefing/G6_Logistica_Briefing.tex): Código fuente en LaTeX.
-* **[`openapi.yaml`](openapi.yaml)**: Especificación OpenAPI 3.0.3 v1.2 formal.
+* **[`openapi.yaml`](openapi.yaml)**: Especificación OpenAPI 3.0.3 v1.4 formal.
 * **[`Dockerfile`](Dockerfile)**: Archivo de configuración para la contenedorización del servicio.
 
 ---
@@ -130,19 +130,19 @@ Una vez levantado el servidor, puedes interactuar directamente con el contrato R
 
 ---
 
-## 📋 Modelo de Datos (v1.2)
+## 📋 Modelo de Datos (v1.4)
 
-El mock ahora utiliza PostgreSQL (vía Supabase) con 3 tablas clave para soportar el contrato v1.2:
+El mock ahora utiliza PostgreSQL (vía Supabase) con 3 tablas clave para soportar el contrato v1.4:
 
 1. **`shipments`**: Registra individualmente cada caja/paquete (eliminando la restricción UNIQUE en `order_id` para permitir envíos multi-origen). Almacena campos volumétricos, costos (`shipping_cost`), zona de origen (`origin_cd`) y estado actual.
 2. **`shipment_status_history`**: Mantiene un historial inmutable de todas las transiciones de estado por cada `shipment_id`.
-3. **`outbox_events`**: Implementación del patrón transaccional Outbox. Almacena en la misma transacción de BD los eventos generados (en formato JSON Envelope) listos para ser despachados a Kafka por un worker asíncrono.
+3. **`outbox_events`**: Implementación del patrón transaccional Outbox. Almacena en la misma transacción de BD los eventos generados (en formato JSON Envelope) listos para ser despachados a Google Cloud Pub/Sub por un worker asíncrono.
 
 ---
 
 ## 📋 Resumen del Contrato de la API
 
-El servicio implementa los estándares definidos en el contrato oficial v1.2:
+El servicio implementa los estándares definidos en el contrato oficial v1.4:
 
 ### Cabeceras (Headers) Obligatorias
 
