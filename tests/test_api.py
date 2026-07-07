@@ -32,8 +32,8 @@ def test_quote_shipment_misma_zona():
     data = response.json()
     # Volumetric weight = (10*10*10)/4000 = 0.25. Real weight = 2.0. Billable = 2.0.
     # Cost = 3000 (base) + 500 * 2 = 4000
-    assert data["totalShippingCost"] == 4000
-    assert data["currency"] == "CLP"
+    assert data["totalShippingCost"]["amount"] == 4000
+    assert data["totalShippingCost"]["currency"] == "CLP"
 
 def test_quote_shipment_extrema():
     # Temuco is SUR, Origin is NORTE -> EXTREMA zona
@@ -56,7 +56,7 @@ def test_quote_shipment_extrema():
     data = response.json()
     # Volumetric weight = (50*50*50)/4000 = 125000/4000 = 31.25. Real weight = 10.0. Billable = 31.25.
     # Cost = 8000 (base) + 1200 * 31.25 = 8000 + 37500 = 45500
-    assert data["totalShippingCost"] == 45500
+    assert data["totalShippingCost"]["amount"] == 45500
 
 def test_quote_validation_error():
     # Missing required field 'city'
