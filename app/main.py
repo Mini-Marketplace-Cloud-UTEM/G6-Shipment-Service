@@ -28,6 +28,12 @@ from app.schemas import (
     ShipmentCreateResponse
 )
 
+import logging
+
+# Configuración básica de logs
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logger = logging.getLogger(__name__)
+
 # Inicializar Base de Datos (crea la tabla si no existe)
 Base.metadata.create_all(bind=engine)
 
@@ -178,18 +184,23 @@ async def quote_shipment(
 ):
     # Modo 1: Oficial (con ciudad y paquetes)
     if request.city and request.packages:
+        logger.info(f"Cotizando envío Modo 1 (Oficial) para ciudad: {request.city}")
         total_cost = 0
         for pkg in request.packages:
             _, cost = calculate_shipping_cost(request.city, pkg.origin_cd.value, pkg.weight_kg, pkg.dimensions_cm)
             total_cost += cost
+        logger.info(f"Costo calculado (Modo 1): {total_cost} CLP")
         return QuoteResponse(total_shipping_cost={"amount": total_cost, "currency": "CLP"})
     
     # Modo 2: Parche de Integración (Solo con monto total)
     elif request.order_total_amount is not None and request.order_total_amount > 0:
+        logger.info(f"Cotizando envío Modo 2 (Parche) para orden de: {request.order_total_amount}")
         total_cost = int(request.order_total_amount * 0.05)
+        logger.info(f"Costo calculado (Modo 2): {total_cost} CLP")
         return QuoteResponse(total_shipping_cost={"amount": total_cost, "currency": "CLP"})
     
     # Error: Faltan datos para cualquier modo
+    logger.warning("Fallo al cotizar: Faltan datos para cualquier modo.")
     raise StarletteHTTPException(
         status_code=400,
         detail="Debe proveer 'city' y 'packages' (modo oficial) o 'order_total_amount' (modo parche)."
