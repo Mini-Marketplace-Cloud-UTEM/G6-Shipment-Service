@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Float, Integer, DateTime, ForeignKey
+from sqlalchemy import Column, String, Float, Integer, DateTime, ForeignKey, JSON
 from sqlalchemy.dialects.postgresql import JSONB
 from datetime import datetime, timezone
 from app.database import Base
@@ -34,6 +34,6 @@ class OutboxEvent(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     event_type = Column(String, nullable=False)
-    payload = Column(JSONB, nullable=False)
+    payload = Column(JSON().with_variant(JSONB, 'postgresql'), nullable=False)
     status = Column(String, nullable=False, default="PENDING")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))

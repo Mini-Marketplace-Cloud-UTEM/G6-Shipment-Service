@@ -457,15 +457,6 @@ paths:
           content:
             application/json:
               schema: {}
-    head:
-      summary: Root
-      operationId: root_endpoint
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema: {}
   /api/v1/health:
     get:
       summary: Health
@@ -559,6 +550,21 @@ components:
       - version
       - timestamp
       title: HealthResponse
+    Money:
+      properties:
+        amount:
+          type: integer
+          title: Amount
+          description: Monto en int64
+        currency:
+          type: string
+          title: Currency
+          description: Moneda (siempre CLP)
+          default: CLP
+      type: object
+      required:
+      - amount
+      title: Money
     OriginCD:
       type: string
       enum:
@@ -630,12 +636,7 @@ components:
     QuoteResponse:
       properties:
         totalShippingCost:
-          type: integer
-          title: Totalshippingcost
-        currency:
-          type: string
-          title: Currency
-          default: CLP
+          $ref: '#/components/schemas/Money'
       type: object
       required:
       - totalShippingCost
@@ -782,8 +783,7 @@ components:
           type: number
           title: Volumetricweight
         shippingCost:
-          type: integer
-          title: Shippingcost
+          $ref: '#/components/schemas/Money'
         weightKg:
           type: number
           title: Weightkg
@@ -861,4 +861,3 @@ components:
       - previousStatus
       - updatedAt
       title: ShipmentUpdateResponse
-
