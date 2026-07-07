@@ -14,7 +14,7 @@ Este documento es el reporte oficial que certifica nuestro código, arquitectura
 **Requisito:** URL pública, disponible y estable.
 **Nuestro Estado:** ✅ *Cumplido (Nivel Excelente)*
 *   **Implementación:** Hemos creado un **Nuevo Web Service en Render** conectado a nuestra rama oficial del E3. Esto nos permite tener la aplicación real corriendo con base de datos, mientras mantenemos viva la URL antigua del mock por si otros grupos (Frontend, etc.) aún están transicionando.
-*   **Enlace Oficial App (E3):** [https://g6-despacho-oficial.onrender.com/docs](https://g6-despacho-oficial.onrender.com/docs) *(Nota: Actualizar link final de Render aquí)*
+*   **Enlace Oficial App (E3):** [https://g6-despacho-oficial.onrender.com/docs](https://g6-despacho-oficial.onrender.com/docs)
 *   **Enlace Mock (E2):** [https://g6-despacho.onrender.com/docs](https://g6-despacho.onrender.com/docs)
 
 ### 2. Implementación de endpoints (25%)
