@@ -168,6 +168,17 @@ En caso de fallo, la API responde con un esquema alineado al estándar de la org
 }
 ```
 
+### Formato de Precios (Money Schema)
+Para cotizaciones de envío (usado por G4 Checkout), el campo `totalShippingCost` se devuelve como un objeto estructurado en lugar de un número plano:
+```json
+{
+  "totalShippingCost": {
+    "amount": 45500,
+    "currency": "CLP"
+  }
+}
+```
+
 ### Endpoints REST Simulado (Fase 2)
 
 | Método | Endpoint | Descripción | Consumidores principales |
