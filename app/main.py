@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 import uuid
 from typing import Optional, List, Union
 
-from fastapi import FastAPI, Query, status, Depends, Request, Header
+from fastapi import FastAPI, Query, status, Depends, Request, Header, Body
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
@@ -148,7 +148,34 @@ error_responses = {
 }
 
 @app.post("/api/v1/shipments/quotes", response_model=QuoteResponse, responses=error_responses)
-async def quote_shipment(request: QuoteRequest):
+async def quote_shipment(
+    request: QuoteRequest = Body(
+        ...,
+        openapi_examples={
+            "Modo 1: Oficial": {
+                "summary": "Modo Oficial (Cálculo Volumétrico Real)",
+                "description": "Requiere que se envíe la ciudad destino y los paquetes con sus dimensiones físicas.",
+                "value": {
+                    "city": "Santiago",
+                    "packages": [
+                        {
+                            "originCd": "NORTE",
+                            "weightKg": 2.5,
+                            "dimensionsCm": { "length": 40, "width": 30, "height": 20 }
+                        }
+                    ]
+                }
+            },
+            "Modo 2: Parche": {
+                "summary": "Modo Parche (Fallback 5%)",
+                "description": "Si no se cuenta con dimensiones o ciudad, se envía solo el monto total y se cobra 5% fijo.",
+                "value": {
+                    "orderTotalAmount": 15000
+                }
+            }
+        }
+    )
+):
     # Modo 1: Oficial (con ciudad y paquetes)
     if request.city and request.packages:
         total_cost = 0

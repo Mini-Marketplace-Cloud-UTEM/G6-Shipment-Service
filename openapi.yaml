@@ -13,6 +13,26 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/QuoteRequest'
+            examples:
+              'Modo 1: Oficial':
+                summary: Modo Oficial (Cálculo Volumétrico Real)
+                description: Requiere que se envíe la ciudad destino y los paquetes
+                  con sus dimensiones físicas.
+                value:
+                  city: Santiago
+                  packages:
+                  - originCd: NORTE
+                    weightKg: 2.5
+                    dimensionsCm:
+                      length: 40
+                      width: 30
+                      height: 20
+              'Modo 2: Parche':
+                summary: Modo Parche (Fallback 5%)
+                description: Si no se cuenta con dimensiones o ciudad, se envía solo
+                  el monto total y se cobra 5% fijo.
+                value:
+                  orderTotalAmount: 15000
         required: true
       responses:
         '200':
