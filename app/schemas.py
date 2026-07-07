@@ -37,9 +37,12 @@ class QuoteRequest(CamelModel):
     city: str = Field(..., max_length=100)
     packages: List[PackageInput]
 
+class Money(CamelModel):
+    amount: int = Field(..., description="Monto en int64")
+    currency: str = Field("CLP", description="Moneda (siempre CLP)")
+
 class QuoteResponse(CamelModel):
-    total_shipping_cost: int
-    currency: str = "CLP"
+    total_shipping_cost: Money
 
 class ShipmentCreate(CamelModel):
     order_id: str = Field(..., description="ID único del pedido de G5")
@@ -66,7 +69,7 @@ class ShipmentResponse(CamelModel):
     city: str
     origin_cd: str
     volumetric_weight: float
-    shipping_cost: int
+    shipping_cost: Money
     weight_kg: float
     status: ShipmentStatus
     created_at: datetime

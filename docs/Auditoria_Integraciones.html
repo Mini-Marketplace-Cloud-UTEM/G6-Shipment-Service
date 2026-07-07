@@ -1,0 +1,118 @@
+
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>Auditoria de Integraciones</title>
+        <style>
+            body { font-family: Arial, sans-serif; padding: 40px; line-height: 1.6; max-width: 800px; margin: auto; }
+            h1, h2, h3 { color: #333; }
+            pre { background-color: #f4f4f4; padding: 15px; border-radius: 5px; }
+            table { border-collapse: collapse; width: 100%; }
+            th, td { border: 1px solid #ddd; padding: 8px; }
+            th { background-color: #f2f2f2; }
+        </style>
+    </head>
+    <body>
+        <h1>Auditoría de Integración de Microservicios (G6 - Despacho)</h1>
+<p>Este documento registra el estado de integración de los demás grupos del ecosistema con los servicios del Grupo 6 (Despacho y Logística).</p>
+<hr />
+<h2>[05-Julio-2026] Actualización: Correcciones Aplicadas en G6 (Despacho)</h2>
+<p>En base a la auditoría, hemos aplicado las siguientes correcciones a nuestro servicio para cumplir al 100% con la Guía de Desarrollo del ecosistema:
+1. <strong>Regla 1 (Identificadores):</strong> Nuestro ID de despacho ahora se genera secuencialmente bajo el formato <code>SHP-YYYYMMDD-NNN</code>.
+2. <strong>Regla 2 (Modelo Money):</strong> Ahora los costos de envío devuelven un objeto estricto <code>{ "amount": valor, "currency": "CLP" }</code>.
+3. <strong>Regla 5 y 13 (Enums EventType):</strong> Los eventos (como ShipmentDelivered) ahora se publican bajo <code>UPPER_SNAKE_CASE</code> estricto (ej. <code>SHIPMENT_CREATED</code>, <code>SHIPMENT_DELIVERED</code>).
+4. <strong>Regla 10 (Versionado V2):</strong> Dado que el formato del modelo <code>Money</code> altera la forma de nuestra respuesta, <strong>hemos migrado nuestros endpoints de <code>/api/v1/shipments</code> a <code>/api/v2/shipments</code></strong>.</p>
+<hr />
+<h2>Grupo 4: Carrito y Checkout</h2>
+<ul>
+<li><strong>URL del repositorio auditado:</strong> <code>https://github.com/Mini-Marketplace-Cloud-UTEM/G4.git</code></li>
+<li><strong>Fecha de revisiÃ³n:</strong> 05 de Julio de 2026</li>
+<li><strong>Estado de IntegraciÃ³n:</strong> â�Œ <strong>NO INTEGRADO</strong></li>
+</ul>
+<h3>Hallazgos de la AuditorÃ­a:</h3>
+<ol>
+<li><strong>Ignorando el costo de Despacho:</strong> En su endpoint de <code>POST /v1/checkout</code> y en el cÃ¡lculo total del carrito (<code>total_amount</code>), <strong>solamente</strong> suman los precios de los productos consultados al Grupo 3 (CatÃ¡logo). No existe ninguna llamada al endpoint de G6 (<code>POST /api/v1/shipments/quotes</code>) para sumar el costo de envÃ­o.</li>
+<li><strong>Fuera del mapa de integraciones:</strong> En el <code>README.md</code> del Grupo 4, enumeran al Grupo 1 (Frontend), Grupo 2 (Auth), Grupo 3 (CatÃ¡logo), Grupo 5 (Pedidos), Grupo 7 (Inventario) y Grupo 8 (Pagos). El Grupo 6 no es mencionado en absoluto en su arquitectura de red.</li>
+<li><strong>Falta de recolecciÃ³n de datos clave:</strong> Para que G6 calcule un envÃ­o (Tarifa Consolidada), requiere el peso volumÃ©trico y la ciudad de destino. Actualmente el Grupo 4 no recopila ni envÃ­a esta informaciÃ³n durante el proceso de <em>Checkout</em>.</li>
+</ol>
+<h3>AcciÃ³n Requerida (Mensaje para G4):</h3>
+<p>El equipo de G4 debe modificar su proceso de <em>Checkout</em> para:
+1. Recibir la ciudad de destino y direcciones en el Payload inicial.
+2. Realizar un request sÃ­ncrono a G6: <code>POST https://g6-despacho-oficial.onrender.com/api/v1/shipments/quotes</code> pasando la ciudad y dimensiones.
+3. Sumar la variable resultante (<code>total_shipping_cost</code>) al <code>total_amount</code> de su carrito antes de pasarlo al Grupo 8 para ejecutar el pago real.</p>
+<p>Ejemplo del payload esperado por G6 (a enviar por G4):
+<code>json
+{
+  "orderId": "temp-cart-id",
+  "city": "Santiago",
+  "packages": [
+    {
+      "origin_cd": "CENTRO",
+      "weight_kg": 2.5,
+      "dimensions_cm": { "length": 20, "width": 20, "height": 20 }
+    }
+  ]
+}</code></p>
+<h2>Grupo 1: Backend For Frontend (BFF)</h2>
+<ul>
+<li><strong>URL del repositorio auditado:</strong> <code>https://github.com/Mini-Marketplace-Cloud-UTEM/Grupo-1-BFF.git</code> </li>
+<li><strong>Fecha de revisión:</strong> 05 de Julio de 2026</li>
+<li><strong>Estado de Integración:</strong> ?? <strong>INCOMPLETO / NO INICIADO</strong></li>
+</ul>
+<h3>Hallazgos de la Auditoría:</h3>
+<ol>
+<li><strong>Variable de entorno declarada pero no usada:</strong> El README.md del Grupo 1 reconoce correctamente la existencia de G6 y lista la variable SHIPPING_SERVICE_URL apuntando al servicio de Despacho. Sin embargo, no hay ningún código que la utilice.</li>
+<li><strong>Rutas ausentes:</strong> No existe ningún router (
+outers/shipments.py) ni endpoints para consultar el estado de un despacho (GET /api/v1/shipments/{shipment_id}) ni su historial (GET /api/v1/shipments/{shipment_id}/history). De hecho, ni siquiera existen <em>stubs</em> (endpoints falsos) para el seguimiento de envíos.</li>
+<li><strong>Fuera de su backlog inmediato:</strong> En la sección <em>Próximos pasos</em> de su documentación, mencionan planes para implementar Catálogo, Carrito y Pedidos, pero omiten completamente la orquestación del seguimiento de Despachos.</li>
+</ol>
+<h3>Acción Requerida (Mensaje para G1):</h3>
+<p>El equipo de G1 debe extender su BFF para actuar como proxy (o gateway) de las consultas de estado de envío para que el Frontend (React) pueda consultarlo. Deben:
+1. Crear un router para <strong>Despachos</strong> (ej. /v1/shipments).
+2. Crear un endpoint GET /v1/shipments/{shipment_id} que redirija la llamada hacia GET https://g6-despacho-oficial.onrender.com/api/v1/shipments/{shipment_id}.
+3. Crear un endpoint GET /v1/shipments/{shipment_id}/history que redirija la llamada hacia GET https://g6-despacho-oficial.onrender.com/api/v1/shipments/{shipment_id}/history.</p>
+<h2>Grupo 5: Pedidos</h2>
+<ul>
+<li><strong>URL del repositorio auditado:</strong> https://github.com/Mini-Marketplace-Cloud-UTEM/Grupo5-Pedidos.git</li>
+<li><strong>Fecha de revisión:</strong> 05 de Julio de 2026</li>
+<li><strong>Estado de Integración:</strong> ? <strong>ERROR DE CONTRATO (Integración Fallida)</strong></li>
+</ul>
+<h3>Hallazgos de la Auditoría:</h3>
+<ol>
+<li><strong>Llamada incompleta:</strong> G5 está invocando el endpoint de Despacho POST /api/v1/shipments al momento de confirmar un pedido, pero <strong>solamente están enviando la lista de productos</strong> (packages).</li>
+<li><strong>Campos requeridos ausentes:</strong> G5 no está enviando order_id, customer_name, ddress ni city en el body del request, los cuales son campos estrictamente obligatorios en tu API (según ShipmentCreate). Esta llamada resultará siempre en un error HTTP 422 Unprocessable Entity.</li>
+</ol>
+<h3>Acción Requerida (Mensaje para G5):</h3>
+<p>El equipo de G5 debe ajustar el body de su request al invocar POST <strong>/api/v2/shipments (Nota: hemos migrado a v2)</strong>. Deben inyectar el nombre del cliente, su dirección, la ciudad y el ID de la orden en el nivel superior del JSON, no solo el arreglo de packages.</p>
+<hr />
+<h2>Grupo 8: Pagos y Notificaciones</h2>
+<ul>
+<li><strong>URL del repositorio auditado:</strong> https://github.com/Mini-Marketplace-Cloud-UTEM/G8-Pagos-y-Notificaciones.git</li>
+<li><strong>Fecha de revisión:</strong> 05 de Julio de 2026</li>
+<li><strong>Estado de Integración:</strong> ? <strong>ERROR DE EVENTOS (Integración Fallida)</strong></li>
+</ul>
+<h3>Hallazgos de la Auditoría:</h3>
+<ol>
+<li><strong>Discrepancia en el nombre del Evento:</strong> G8 está configurado para escuchar eventos asíncronos bajo el nombre literal "SHIPMENT_DELIVERED" (en mayúsculas/Screaming Snake Case). Antes, nuestro servicio G6 emitía el evento como "ShipmentDelivered" (en PascalCase), lo cual causaba rechazos. Sin embargo, en G6 <strong>ya hemos corregido esto</strong> y ahora emitimos <code>SHIPMENT_DELIVERED</code>.</li>
+</ol>
+<h3>Acción Requerida (Mensaje para G8):</h3>
+<p>El equipo de G8 ya no necesita hacer ningún cambio de su lado para el nombre del evento, ya que G6 se apegó al estándar (Regla 5). Su integración ahora debería funcionar sin problemas.</p>
+<hr />
+<h2>Grupo 7: Reportería y Streaming</h2>
+<ul>
+<li><strong>URL del repositorio auditado:</strong> https://github.com/Mini-Marketplace-Cloud-UTEM/Grupo-7-Reporter-a-bash-y-Streaming.git</li>
+<li><strong>Fecha de revisión:</strong> 05 de Julio de 2026</li>
+<li><strong>Estado de Integración:</strong> ? <strong>ERROR DE PARSEO DE EVENTOS (Integración Fallida)</strong></li>
+</ul>
+<h3>Hallazgos de la Auditoría:</h3>
+<ol>
+<li><strong>Payload Incompatible:</strong> G7 escuchaba el evento, pero su validador (Pydantic ShipmentDeliveredPayload) exige estrictamente que el evento contenga el campo delivered_at y exige que las llaves estén en snake_case (shipment_id, order_id). G6 no emite el campo delivered_at (utiliza occurredAt a nivel global de la envoltura) y el payload viaja en camelCase (shipmentId, orderId) lo cual es exigido por la <strong>Regla 4</strong> del lineamiento general.</li>
+</ol>
+<h3>Acción Requerida (Mensaje para G7):</h3>
+<p>El equipo de G7 <strong>ESTÁ EN INCUMPLIMIENTO DE LA REGLA 4</strong> y debe corregir su código. Deben:
+1. Acatar la Regla 4 (Payloads en camelCase) y permitir leer <code>shipmentId</code> y <code>orderId</code>.
+2. Remover la exigencia estricta del campo delivered_at dentro del payload, o usar la propiedad global occurredAt de la envoltura del evento que G6 ya les proporciona.</p>
+    </body>
+    </html>
+    

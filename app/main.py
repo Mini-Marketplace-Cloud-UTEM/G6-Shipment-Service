@@ -153,7 +153,7 @@ async def quote_shipment(request: QuoteRequest):
     for pkg in request.packages:
         _, cost = calculate_shipping_cost(request.city, pkg.origin_cd.value, pkg.weight_kg, pkg.dimensions_cm)
         total_cost += cost
-    return QuoteResponse(total_shipping_cost=total_cost, currency="CLP")
+    return QuoteResponse(total_shipping_cost={"amount": total_cost, "currency": "CLP"})
 
 
 @app.post("/api/v1/shipments", response_model=ShipmentCreateResponse, status_code=status.HTTP_201_CREATED, responses=error_responses, dependencies=[Depends(verify_headers)])
@@ -166,8 +166,13 @@ async def create_shipment(request: Request, shipment_data: ShipmentCreate, db: S
     shipment_ids = []
     total_packages = len(shipment_data.packages)
     
+    today_str = now.strftime("%Y%m%d")
+    prefix = f"SHP-{today_str}-"
+    count_today = db.query(Shipment).filter(Shipment.shipment_id.like(f"{prefix}%")).count()
+    
     for idx, pkg in enumerate(shipment_data.packages, start=1):
-        shipment_id = f"SHP-{uuid.uuid4().hex[:8]}"
+        shipment_seq = count_today + idx
+        shipment_id = f"{prefix}{shipment_seq:03d}"
         shipment_ids.append(shipment_id)
         
         volumetric_weight, shipping_cost = calculate_shipping_cost(
@@ -203,21 +208,26 @@ async def create_shipment(request: Request, shipment_data: ShipmentCreate, db: S
         # 3. Create Outbox Event
         event_payload = {
             "eventId": str(uuid.uuid4()),
-            "eventType": "ShipmentCreated",
+            "eventType": "SHIPMENT_CREATED",
             "version": "1.1",
             "occurredAt": now.isoformat(),
             "producer": "g6-despacho",
             "correlationId": correlation_id,
             "payload": {
-                "packageIndex": idx,
-                "totalPackages": total_packages,
                 "shipmentId": shipment_id,
                 "orderId": shipment_data.order_id,
-                "newStatus": ShipmentStatus.PENDING.value
+                "customerName": shipment_data.customer_name,
+                "address": shipment_data.address,
+                "city": shipment_data.city,
+                "weightKg": pkg.weight_kg,
+                "status": ShipmentStatus.PENDING.value,
+                "estimatedDelivery": estimated.isoformat() if estimated else None,
+                "packageIndex": idx,
+                "totalPackages": total_packages
             }
         }
         outbox_event = OutboxEvent(
-            event_type="ShipmentCreated",
+            event_type="SHIPMENT_CREATED",
             payload=event_payload,
             status="PENDING",
             created_at=now
@@ -243,7 +253,7 @@ def _format_shipment(s: Shipment) -> dict:
         "city": s.city,
         "origin_cd": s.origin_cd,
         "volumetric_weight": s.volumetric_weight,
-        "shipping_cost": s.shipping_cost,
+        "shipping_cost": {"amount": s.shipping_cost, "currency": "CLP"},
         "weight_kg": s.weight_kg,
         "status": s.status,
         "created_at": s.created_at,
@@ -390,7 +400,17 @@ async def update_shipment_status(request: Request, shipment_id: str, update_data
     db.add(history)
     
     # 3. Add outbox event
-    event_type = f"Shipment{new_status.capitalize().replace('_', '')}"
+    event_type = f"SHIPMENT_{new_status.upper()}"
+    
+    # Calcular packageIndex y totalPackages para entregas parciales
+    all_shipments = db.query(Shipment).filter(
+        Shipment.order_id == shipment.order_id
+    ).order_by(Shipment.created_at.asc()).all()
+    total_packages = len(all_shipments)
+    package_index = next(
+        (i for i, s in enumerate(all_shipments, 1) if s.shipment_id == shipment_id), 1
+    )
+    
     event_payload = {
         "eventId": str(uuid.uuid4()),
         "eventType": event_type,
@@ -401,8 +421,12 @@ async def update_shipment_status(request: Request, shipment_id: str, update_data
         "payload": {
             "shipmentId": shipment_id,
             "orderId": shipment.order_id,
+            "customerName": shipment.customer_name,
+            "city": shipment.city,
             "newStatus": new_status,
-            "previousStatus": current_status
+            "previousStatus": current_status,
+            "packageIndex": package_index,
+            "totalPackages": total_packages
         }
     }
     outbox_event = OutboxEvent(

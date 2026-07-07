@@ -30,17 +30,10 @@ El repositorio está organizado de la siguiente manera:
   * [`models.py`](app/models.py): Modelos SQLAlchemy (PostgreSQL).
   * [`database.py`](app/database.py): Conexión a Supabase.
 * **[`docs/`](docs/)**: Documentación técnica oficial.
-  * [`contratos/`](docs/contratos/): Contrato de la API REST, eventos, C4 y matriz de dependencias.
-    * [`v1.0/`](docs/contratos/v1.0/): Versión inicial del contrato.
-      * 📑 **[G6_Contrato_API_Despacho.pdf](docs/contratos/v1.0/G6_Contrato_API_Despacho.pdf)**: Documento compilado final.
-      * 📄 [G6_Contrato_API_Despacho.tex](docs/contratos/v1.0/G6_Contrato_API_Despacho.tex): Código fuente en LaTeX.
-    * [`v1.1/`](docs/contratos/v1.1/): Soporte Multi-Origen y Tarifas Volumétricas (Histórico).
-      * 📑 **[G6_Contrato_API_Despacho_v1.1.pdf](docs/contratos/v1.1/G6_Contrato_API_Despacho_v1.1.pdf)**
-      * 📄 [G6_Contrato_API_Despacho_v1.1.tex](docs/contratos/v1.1/G6_Contrato_API_Despacho_v1.1.tex)
-      * Archivos Markdown individuales para la integración de cada grupo (`G1_Frontend.md`, `G4_Inventario_Checkout.md`, etc.).
-    * [`v1.2/`](docs/contratos/v1.2/): Alineación de paginación y esquema de errores unificado (Actual).
-      * 📑 **[G6_Contrato_API_Despacho_v1.2.pdf](docs/contratos/v1.2/G6_Contrato_API_Despacho_v1.2.pdf)**: Documento compilado final.
-      * 📄 [G6_Contrato_API_Despacho_v1.2.tex](docs/contratos/v1.2/G6_Contrato_API_Despacho_v1.2.tex): Código fuente en LaTeX.
+  * [`contratos/`](docs/contratos/): Contratos de la API REST y eventos.
+    * 📑 **[G6_Contrato_API_Despacho.pdf](docs/contratos/G6_Contrato_API_Despacho.pdf)**: Documento compilado final (Consolidado v1.4).
+    * 📄 [G6_Contrato_API_Despacho.tex](docs/contratos/G6_Contrato_API_Despacho.tex): Código fuente en LaTeX.
+    * Archivos Markdown individuales para la integración de cada grupo (`G1_Frontend.md`, `G4_Inventario_Checkout.md`, etc.).
   * [`briefing/`](docs/briefing/): Briefing técnico del servicio.
     * 📑 **[G6_Logistica_Briefing.pdf](docs/briefing/G6_Logistica_Briefing.pdf)**: Documento compilado final.
     * 📄 [G6_Logistica_Briefing.tex](docs/briefing/G6_Logistica_Briefing.tex): Código fuente en LaTeX.
@@ -190,12 +183,12 @@ En caso de fallo, la API responde con un esquema alineado al estándar de la org
 
 ## ⚡ Flujo de Eventos (Asincronía)
 
-El servicio publica actualizaciones en el tópico Kafka `shipment-events`. El sobre (*envelope*) de los eventos utiliza la convención **camelCase** y consta de la siguiente cabecera estándar:
+El servicio publica actualizaciones en un tópico de **Google Cloud Pub/Sub** mediante un worker del patrón Outbox. El sobre (*envelope*) de los eventos utiliza la convención **camelCase** y consta de la siguiente cabecera estándar:
 
 ```json
 {
   "eventId": "uuid-evento-9999",
-  "eventType": "ShipmentCreated",
+  "eventType": "SHIPMENT_CREATED",
   "version": "1.2",
   "occurredAt": "2026-06-16T17:05:00Z",
   "producer": "g6-despacho",
@@ -205,9 +198,9 @@ El servicio publica actualizaciones en el tópico Kafka `shipment-events`. El so
 ```
 
 ### Eventos Publicados
-1. **`ShipmentCreated`**: Despacho creado con éxito.
-2. **`ShipmentInTransit`**: El despacho ha salido de bodega física.
-3. **`ShipmentDelivered`**: El transportista entregó el producto al destinatario final.
-4. **`ShipmentCancelled`**: Cancelación de orden de despacho.
-5. **`ShipmentFailed`**: Fallo crítico o dirección inaccesible.
-6. **`ShipmentReturned`**: El producto regresó al centro logístico.
+1. **`SHIPMENT_CREATED`**: Despacho creado con éxito.
+2. **`SHIPMENT_IN_TRANSIT`**: El despacho ha salido de bodega física.
+3. **`SHIPMENT_DELIVERED`**: El transportista entregó el producto al destinatario final.
+4. **`SHIPMENT_CANCELLED`**: Cancelación de orden de despacho.
+5. **`SHIPMENT_FAILED`**: Fallo crítico o dirección inaccesible.
+6. **`SHIPMENT_RETURNED`**: El producto regresó al centro logístico.
