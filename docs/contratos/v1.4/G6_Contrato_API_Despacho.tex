@@ -171,7 +171,7 @@ El servicio de \textbf{Despacho y Logística (G6)} es responsable de gestionar e
 
 \subsection{Dueño del Dato (Ownership)}
 
-\begin{table}[h!]
+\begin{table}[ht!]
 \centering
 \renewcommand{\arraystretch}{1.4}
 \begin{tabularx}{\textwidth}{l l l X}
@@ -192,7 +192,7 @@ El servicio de \textbf{Despacho y Logística (G6)} es responsable de gestionar e
 \section{Información General}
 \label{sec:general-info}
 
-\begin{table}[h!]
+\begin{table}[ht!]
 \centering
 \renewcommand{\arraystretch}{1.4}
 \begin{tabularx}{\textwidth}{l X}
@@ -227,7 +227,7 @@ El servicio de \textbf{Despacho y Logística (G6)} es responsable de gestionar e
 
 \subsection{Resumen de Endpoints}
 
-\begin{table}[h!]
+\begin{table}[ht!]
 \centering
 \renewcommand{\arraystretch}{1.5}
 \begin{tabularx}{\textwidth}{l l X l}
@@ -250,7 +250,7 @@ El servicio de \textbf{Despacho y Logística (G6)} es responsable de gestionar e
 \section{Modelo de Datos: Shipment}
 \label{sec:modelo}
 
-\begin{table}[h!]
+\begin{table}[ht!]
 \centering
 \renewcommand{\arraystretch}{1.4}
 \begin{tabularx}{\textwidth}{l l l c X}
@@ -318,7 +318,7 @@ Estados almacenados en la tabla \texttt{shipments}.
 \end{tikzpicture}
 \end{center}
 
-\begin{table}[h!]
+\begin{table}[ht!]
 \centering
 \renewcommand{\arraystretch}{1.4}
 \begin{tabularx}{\textwidth}{l l l X}
@@ -441,7 +441,7 @@ Requiere que G4 consolide las tallas (G3) y la ciudad de destino (G1).
 \end{lstlisting}
 
 \textbf{Campos requeridos:}
-\begin{table}[h!]
+\begin{table}[ht!]
 \small
 \begin{tabularx}{\textwidth}{l l l X}
   \toprule
@@ -468,7 +468,7 @@ Requiere que G4 consolide las tallas (G3) y la ciudad de destino (G1).
 \end{lstlisting}
 
 \textbf{Errores:}
-\begin{table}[h!]
+\begin{table}[ht!]
 \small
 \begin{tabularx}{\textwidth}{l l X}
   \toprule
@@ -515,7 +515,7 @@ Llamado por \textbf{G1 (Frontend)} y \textbf{G5 (Pedidos o Order Management)}.
 \end{lstlisting}
 
 \textbf{Errores:}
-\begin{table}[h!]
+\begin{table}[ht!]
 \small
 \begin{tabularx}{\textwidth}{l l X}
   \toprule
@@ -551,7 +551,7 @@ Llamado por \textbf{G1 (Frontend)} y \textbf{G5 (Pedidos o Order Management)}.
 \end{lstlisting}
 
 \textbf{Errores:}
-\begin{table}[h!]
+\begin{table}[ht!]
 \small
 \begin{tabularx}{\textwidth}{l l X}
   \toprule
@@ -600,7 +600,7 @@ Llamado por \textbf{G1 (Frontend)} y \textbf{G5 (Pedidos o Order Management)}.
 \end{infobox}
 
 \textbf{Errores:}
-\begin{table}[h!]
+\begin{table}[ht!]
 \small
 \begin{tabularx}{\textwidth}{l l X}
   \toprule
@@ -624,7 +624,7 @@ Llamado por \textbf{G1 (Frontend)} y \textbf{G5 (Pedidos o Order Management)}.
 
 \vspace{0.3cm}
 \textbf{Query Parameters (opcionales):}
-\begin{table}[h!]
+\begin{table}[ht!]
 \small
 \begin{tabularx}{\textwidth}{l l l X}
   \toprule
@@ -696,7 +696,7 @@ Todos los errores siguen el mismo formato base. Opcionalmente, se puede incluir 
 }
 \end{lstlisting}
 
-\begin{table}[h!]
+\begin{table}[ht!]
 \centering
 \renewcommand{\arraystretch}{1.4}
 \begin{tabularx}{\textwidth}{l l X}
@@ -755,7 +755,7 @@ Todos los eventos emitidos por G6 siguen esta estructura. Cada vez que un despac
 }
 \end{lstlisting}
 
-\begin{table}[h!]
+\begin{table}[ht!]
 \centering
 \renewcommand{\arraystretch}{1.4}
 \begin{tabularx}{\textwidth}{l l X}
@@ -1101,7 +1101,7 @@ G7 consume datos para dashboards de rendimiento.
 
 \subsection{Datos relevantes para G7}
 
-\begin{table}[h!]
+\begin{table}[ht!]
 \centering
 \renewcommand{\arraystretch}{1.4}
 \begin{tabularx}{\textwidth}{l X}
@@ -1124,7 +1124,7 @@ G1 consume nuestro endpoint de tracking.
 
 \textbf{Endpoint:} \texttt{GET /api/v1/shipments/\{shipment\_id\}}
 
-\begin{table}[h!]
+\begin{table}[ht!]
 \centering
 \renewcommand{\arraystretch}{1.4}
 \begin{tabularx}{\textwidth}{l X}
@@ -1147,7 +1147,7 @@ G1 consume nuestro endpoint de tracking.
 
 \section{Matriz de Dependencias}
 
-\begin{table}[h!]
+\begin{table}[ht!]
 \centering
 \renewcommand{\arraystretch}{1.5}
 \begin{tabularx}{\textwidth}{c c l l X}
@@ -1337,7 +1337,7 @@ Todos los errores retornados por la API siguen la estructura estándar definida 
 
 \section{Historial de Versiones}
 
-\begin{table}[h!]
+\begin{table}[ht!]
 \centering
 \begin{tabularx}{\textwidth}{l l l X}
   \toprule
