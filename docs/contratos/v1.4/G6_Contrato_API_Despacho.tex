@@ -262,7 +262,7 @@ El servicio de \textbf{Despacho y Logística (G6)} es responsable de gestionar e
   \texttt{customer\_name}      & string   & \texttt{María G.}             & Sí   & Nombre del destinatario. \\
   \texttt{address}             & string   & \texttt{Av. Prov. 1234}       & Sí   & Dirección de entrega. \\
   \texttt{city}                & string   & \texttt{Santiago}             & Sí   & Ciudad de destino. \\
-  \texttt{weight\_kg}          & number   & \texttt{3.2}                  & Sí   & Peso del paquete en kg. \\
+  \texttt{weight\_kg}          & number   & \texttt{5.0}                  & ---  & Peso facturable equivalente en kg. \\
   \texttt{status}              & string   & \texttt{PENDING}              & ---  & Estado actual. \\
   \texttt{created\_at}         & datetime & \texttt{2026-06-11T14:00Z}    & ---  & Fecha de creación. \\
   \texttt{updated\_at}         & datetime & \texttt{2026-06-11T15:30Z}    & ---  & Última actualización. \\
@@ -352,10 +352,16 @@ Estado visualizado por el cliente, calculado al vuelo leyendo todas las cajas de
 
 El endpoint \texttt{/quotes} debe calcular la suma total de las cajas para retornar un único cobro.
 
-\textbf{Paso 1: Peso Facturable (Factor de Conversión: 4000)}
-Para cada paquete, se cobra por el mayor valor entre el peso físico y el volumétrico:
-$$ \text{Peso Volumétrico} = \frac{\text{Largo (cm)} \times \text{Ancho (cm)} \times \text{Alto (cm)}}{4000} $$
-$$ \text{Peso Facturable} = \max(\text{Peso Físico}, \text{Peso Volumétrico}) $$
+\textbf{Paso 1: Traducción de Talla a Peso Facturable}
+Cada paquete enviado en el contrato indica una Talla (\texttt{size}). El motor de cotizaciones de G6 traduce automáticamente esta talla a un Peso Facturable en kilogramos según la siguiente tabla estándar:
+\begin{itemize}[noitemsep]
+  \item \textbf{XS}: 1.0 kg
+  \item \textbf{S}: 2.0 kg
+  \item \textbf{M}: 5.0 kg
+  \item \textbf{L}: 10.0 kg
+  \item \textbf{XL}: 20.0 kg
+  \item \textbf{XXL}: 40.0 kg
+\end{itemize}
 
 \textbf{Paso 2: Tarifario Simulado por Macrozona}
 \begin{itemize}[noitemsep]
@@ -376,13 +382,12 @@ $$ \text{Costo Total} = \sum_{i=1}^{n} \left( \text{Costo Base}_i + (\text{Peso 
 
 \routeheader{post}{POST}{/api/v1/shipments/quotes}
 
-\textbf{Descripción:} Endpoint inteligente que cotiza envíos. Acepta dos modos de operación debido a dependencias con G4.
+\textbf{Descripción:} Endpoint inteligente que cotiza envíos en base a la Talla del paquete y la distancia al destino.
 
 \vspace{0.3cm}
-\textbf{Modo 1: Oficial (Cálculo Volumétrico Real)}
+\textbf{Cotización por Tallas (Misma, Adyacente o Extrema)}
 
-Requiere que G4 consolide volumetría (G3) y destino (G1).
-Fórmula: \texttt{Peso Volumétrico (kg) = (Largo\_cm * Ancho\_cm * Alto\_cm) / 4000}.
+Requiere que G4 consolide las tallas (G3) y la ciudad de destino (G1).
 
 \textbf{Request Body} (\texttt{application/json}):
 \begin{lstlisting}
@@ -391,28 +396,14 @@ Fórmula: \texttt{Peso Volumétrico (kg) = (Largo\_cm * Ancho\_cm * Alto\_cm) / 
   "packages": [
     {
       "originCd": "NORTE",
-      "weightKg": 2.5,
-      "dimensionsCm": { "length": 40, "width": 30, "height": 20 }
+      "size": "M"
     }
   ]
 }
 \end{lstlisting}
 
 \vspace{0.3cm}
-\textbf{Modo 2: Parche Temporal (Fallback 5\%)}
-
-Si G4 no cuenta con dimensiones o ciudad, se acepta el monto total de la orden (int64). El endpoint cobrará un 5\% fijo.
-\textit{Nota: Parche habilitado de forma temporal para destrabar la integración E4.}
-
-\textbf{Request Body} (\texttt{application/json}):
-\begin{lstlisting}
-{
-  "orderTotalAmount": 15000
-}
-\end{lstlisting}
-
-\vspace{0.3cm}
-\textbf{Response --- 200 OK (Ambos Modos):}
+\textbf{Response --- 200 OK:}
 
 \begin{lstlisting}
 {
@@ -442,9 +433,9 @@ Si G4 no cuenta con dimensiones o ciudad, se acepta el monto total de la orden (
   "customerName": "María González",
   "address": "Av. Providencia 1234, Depto 56",
   "city": "Santiago",
-  \"packages\": [
-    { \"originCd\": \"NORTE\", \"weightKg\": 2.5, \"dimensionsCm\": { \"length\": 40, \"width\": 30, \"height\": 20 } },
-    { \"originCd\": \"CENTRO\", \"weightKg\": 1.0, \"dimensionsCm\": { \"length\": 15, \"width\": 10, \"height\": 5 } }
+  "packages": [
+    { "originCd": "NORTE", "size": "M" },
+    { "originCd": "CENTRO", "size": "XL" }
   ]
 }
 \end{lstlisting}
@@ -460,7 +451,7 @@ Si G4 no cuenta con dimensiones o ciudad, se acepta el monto total de la orden (
   \texttt{customer\_name} & string & Sí & No vacío. Máx. 200 chars. \\
   \texttt{address}        & string & Sí & No vacío. Máx. 500 chars. \\
   \texttt{city}           & string & Sí & No vacío. Máx. 100 chars. \\
-  \texttt{weight\_kg}     & number & Sí & Mayor a 0. Máx. 500 kg. \\
+  \texttt{packages}       & array  & Sí & Lista de paquetes con \texttt{originCd} y \texttt{size}. \\
   \bottomrule
 \end{tabularx}
 \end{table}
@@ -787,11 +778,11 @@ Todos los eventos emitidos por G6 siguen esta estructura. Cada vez que un despac
 \section{Catálogo de Eventos}
 
 % ── SHIPMENT_CREATED ──────────────────────────────────────────────────────────
-\subsection{SHIPMENT_CREATED}
+\subsection{SHIPMENT\_CREATED}
 
 Se emite cuando G5 crea exitosamente un nuevo despacho.
 
-\contractheader{SHIPMENT_CREATED}
+\contractheader{SHIPMENT\_CREATED}
 
 \begin{lstlisting}
 {
@@ -821,11 +812,11 @@ Se emite cuando G5 crea exitosamente un nuevo despacho.
 \vspace{0.4cm}
 
 % ── SHIPMENT_IN_TRANSIT ────────────────────────────────────────────────────────
-\subsection{SHIPMENT_IN_TRANSIT}
+\subsection{SHIPMENT\_IN\_TRANSIT}
 
 Se emite cuando el paquete sale a reparto.
 
-\contractheader{SHIPMENT_IN_TRANSIT}
+\contractheader{SHIPMENT\_IN\_TRANSIT}
 
 \begin{lstlisting}
 {
@@ -853,11 +844,11 @@ Se emite cuando el paquete sale a reparto.
 \vspace{0.4cm}
 
 % ── SHIPMENT_DELIVERED ────────────────────────────────────────────────────────
-\subsection{SHIPMENT_DELIVERED}
+\subsection{SHIPMENT\_DELIVERED}
 
 Se emite cuando el paquete es entregado exitosamente.
 
-\contractheader{SHIPMENT_DELIVERED}
+\contractheader{SHIPMENT\_DELIVERED}
 
 \begin{lstlisting}
 {
@@ -886,11 +877,11 @@ Se emite cuando el paquete es entregado exitosamente.
 \vspace{0.4cm}
 
 % ── SHIPMENT_CANCELLED ────────────────────────────────────────────────────────
-\subsection{SHIPMENT_CANCELLED}
+\subsection{SHIPMENT\_CANCELLED}
 
 Se emite cuando un despacho es cancelado antes de salir a reparto.
 
-\contractheader{SHIPMENT_CANCELLED}
+\contractheader{SHIPMENT\_CANCELLED}
 
 \begin{lstlisting}
 {
@@ -918,11 +909,11 @@ Se emite cuando un despacho es cancelado antes de salir a reparto.
 \vspace{0.4cm}
 
 % ── SHIPMENT_FAILED ───────────────────────────────────────────────────────────
-\subsection{SHIPMENT_FAILED}
+\subsection{SHIPMENT\_FAILED}
 
 Se emite cuando un intento de entrega falla.
 
-\contractheader{SHIPMENT_FAILED}
+\contractheader{SHIPMENT\_FAILED}
 
 \begin{lstlisting}
 {
@@ -950,11 +941,11 @@ Se emite cuando un intento de entrega falla.
 \vspace{0.4cm}
 
 % ── SHIPMENT_RETURNED ─────────────────────────────────────────────────────────
-\subsection{SHIPMENT_RETURNED}
+\subsection{SHIPMENT\_RETURNED}
 
 Se emite cuando un paquete entregado es devuelto.
 
-\contractheader{SHIPMENT_RETURNED}
+\contractheader{SHIPMENT\_RETURNED}
 
 \begin{lstlisting}
 {

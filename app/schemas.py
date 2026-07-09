@@ -23,20 +23,21 @@ class OriginCD(str, Enum):
     CENTRO = "CENTRO"
     SUR = "SUR"
 
-class DimensionsCm(CamelModel):
-    length: float = Field(..., gt=0)
-    width: float = Field(..., gt=0)
-    height: float = Field(..., gt=0)
+class PackageSize(str, Enum):
+    XS = "XS"
+    S = "S"
+    M = "M"
+    L = "L"
+    XL = "XL"
+    XXL = "XXL"
 
 class PackageInput(CamelModel):
     origin_cd: OriginCD
-    weight_kg: float = Field(..., gt=0)
-    dimensions_cm: DimensionsCm
+    size: PackageSize
 
 class QuoteRequest(CamelModel):
-    city: Optional[str] = Field(None, max_length=100, description="Ciudad de destino (Modo Oficial)")
-    packages: Optional[List[PackageInput]] = Field(None, description="Lista de paquetes físicos (Modo Oficial)")
-    order_total_amount: Optional[int] = Field(None, description="Monto total de la orden. Usado como parche de contingencia (5% de cobro) si no vienen city ni packages.")
+    city: str = Field(..., max_length=100, description="Ciudad de destino")
+    packages: List[PackageInput] = Field(..., description="Lista de paquetes con su talla")
 
 class Money(CamelModel):
     amount: int = Field(..., description="Monto en int64")

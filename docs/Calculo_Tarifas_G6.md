@@ -8,16 +8,16 @@ Este motor fue diseñado para resolver dos grandes problemas logísticos reales:
 
 ---
 
-## 1. Peso Facturable (Billable Weight)
+## 1. Peso Facturable según Talla (Billable Weight)
 
-El peso que se utiliza para calcular el costo **no es siempre el peso físico**. Comparamos el peso físico contra el peso volumétrico y cobramos por el mayor de los dos.
+Para simplificar la integración con otros grupos, la API ya no requiere dimensiones físicas ni peso real. En su lugar, recibe la **Talla** del paquete (XS, S, M, L, XL, XXL) y nuestro motor la traduce internamente a un "Peso Facturable Equivalente" en kilogramos.
 
-- **Peso Físico (weightKg):** Peso real en kilogramos.
-- **Peso Volumétrico:** Calculado a partir de las dimensiones del paquete usando un factor de conversión logístico estándar (división por 4000 cm³/kg).
-  
-  Peso Volumétrico = (Largo * Ancho * Alto) / 4000
-
-- **Peso Facturable:** MAX(Peso Físico, Peso Volumétrico)
+- **Talla XS:** 1 Kg
+- **Talla S:** 2 Kg
+- **Talla M:** 5 Kg
+- **Talla L:** 10 Kg
+- **Talla XL:** 20 Kg
+- **Talla XXL:** 40 Kg
 
 ---
 

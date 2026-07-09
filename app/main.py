@@ -25,7 +25,8 @@ from app.schemas import (
     QuoteResponse,
     OriginCD,
     ShipmentHistoryResponse,
-    ShipmentCreateResponse
+    ShipmentCreateResponse,
+    PackageSize
 )
 
 import logging
@@ -72,9 +73,17 @@ TARIFF = {
     "EXTREMA":   {"base": 8000, "per_kg": 1200},
 }
 
-def calculate_shipping_cost(city: str, origin_cd: str, weight_kg: float, dimensions_cm) -> tuple[float, int]:
-    volumetric_weight = (dimensions_cm.length * dimensions_cm.width * dimensions_cm.height) / 4000
-    billable_weight = max(weight_kg, volumetric_weight)
+SIZE_WEIGHT_MAP = {
+    PackageSize.XS: 1.0,
+    PackageSize.S: 2.0,
+    PackageSize.M: 5.0,
+    PackageSize.L: 10.0,
+    PackageSize.XL: 20.0,
+    PackageSize.XXL: 40.0,
+}
+
+def calculate_shipping_cost(city: str, origin_cd: str, size: PackageSize) -> tuple[float, int]:
+    billable_weight = SIZE_WEIGHT_MAP.get(size, 1.0)
     
     # Resolucion de zona de destino. Si no se encuentra, por defecto se cobra como EXTREMA.
     dest_zone = CITY_ZONE.get(city, "EXTREMA")
@@ -85,7 +94,7 @@ def calculate_shipping_cost(city: str, origin_cd: str, weight_kg: float, dimensi
     tariff = TARIFF[tariff_type]
     cost = tariff["base"] + (tariff["per_kg"] * billable_weight)
     
-    return volumetric_weight, int(cost)
+    return billable_weight, int(cost)
 
 
 def get_correlation_id(request: Request) -> str:
@@ -158,53 +167,29 @@ async def quote_shipment(
     request: QuoteRequest = Body(
         ...,
         openapi_examples={
-            "Modo 1: Oficial": {
-                "summary": "Modo Oficial (Cálculo Volumétrico Real)",
-                "description": "Requiere que se envíe la ciudad destino y los paquetes con sus dimensiones físicas.",
+            "Ejemplo Cotización": {
+                "summary": "Cotización (Cálculo por Tallas)",
+                "description": "Requiere que se envíe la ciudad destino y los paquetes con su talla.",
                 "value": {
                     "city": "Santiago",
                     "packages": [
                         {
                             "originCd": "NORTE",
-                            "weightKg": 2.5,
-                            "dimensionsCm": { "length": 40, "width": 30, "height": 20 }
+                            "size": "M"
                         }
                     ]
-                }
-            },
-            "Modo 2: Parche": {
-                "summary": "Modo Parche (Fallback 5%)",
-                "description": "Si no se cuenta con dimensiones o ciudad, se envía solo el monto total y se cobra 5% fijo.",
-                "value": {
-                    "orderTotalAmount": 15000
                 }
             }
         }
     )
 ):
-    # Modo 1: Oficial (con ciudad y paquetes)
-    if request.city and request.packages:
-        logger.info(f"Cotizando envío Modo 1 (Oficial) para ciudad: {request.city}")
-        total_cost = 0
-        for pkg in request.packages:
-            _, cost = calculate_shipping_cost(request.city, pkg.origin_cd.value, pkg.weight_kg, pkg.dimensions_cm)
-            total_cost += cost
-        logger.info(f"Costo calculado (Modo 1): {total_cost} CLP")
-        return QuoteResponse(total_shipping_cost={"amount": total_cost, "currency": "CLP"})
-    
-    # Modo 2: Parche de Integración (Solo con monto total)
-    elif request.order_total_amount is not None and request.order_total_amount > 0:
-        logger.info(f"Cotizando envío Modo 2 (Parche) para orden de: {request.order_total_amount}")
-        total_cost = int(request.order_total_amount * 0.05)
-        logger.info(f"Costo calculado (Modo 2): {total_cost} CLP")
-        return QuoteResponse(total_shipping_cost={"amount": total_cost, "currency": "CLP"})
-    
-    # Error: Faltan datos para cualquier modo
-    logger.warning("Fallo al cotizar: Faltan datos para cualquier modo.")
-    raise StarletteHTTPException(
-        status_code=400,
-        detail="Debe proveer 'city' y 'packages' (modo oficial) o 'order_total_amount' (modo parche)."
-    )
+    logger.info(f"Cotizando envío para ciudad: {request.city}")
+    total_cost = 0
+    for pkg in request.packages:
+        _, cost = calculate_shipping_cost(request.city, pkg.origin_cd.value, pkg.size)
+        total_cost += cost
+    logger.info(f"Costo calculado: {total_cost} CLP")
+    return QuoteResponse(total_shipping_cost={"amount": total_cost, "currency": "CLP"})
 
 
 @app.post("/api/v1/shipments", response_model=ShipmentCreateResponse, status_code=status.HTTP_201_CREATED, responses=error_responses, dependencies=[Depends(verify_headers)])
@@ -227,8 +212,8 @@ async def create_shipment(request: Request, shipment_data: ShipmentCreate, db: S
         shipment_id = f"{prefix}{shipment_seq:03d}"
         shipment_ids.append(shipment_id)
         
-        volumetric_weight, shipping_cost = calculate_shipping_cost(
-            shipment_data.city, pkg.origin_cd.value, pkg.weight_kg, pkg.dimensions_cm
+        billable_weight, shipping_cost = calculate_shipping_cost(
+            shipment_data.city, pkg.origin_cd.value, pkg.size
         )
         
         # 1. Create Shipment
@@ -239,9 +224,9 @@ async def create_shipment(request: Request, shipment_data: ShipmentCreate, db: S
             address=shipment_data.address,
             city=shipment_data.city,
             origin_cd=pkg.origin_cd.value,
-            volumetric_weight=volumetric_weight,
+            volumetric_weight=billable_weight,  # Guardamos el peso equivalente
             shipping_cost=shipping_cost,
-            weight_kg=pkg.weight_kg,
+            weight_kg=billable_weight,          # Guardamos el peso equivalente
             status=ShipmentStatus.PENDING,
             created_at=now,
             updated_at=now,

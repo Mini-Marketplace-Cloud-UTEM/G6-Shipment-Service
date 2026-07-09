@@ -18,20 +18,14 @@ def test_quote_shipment_misma_zona():
         "packages": [
             {
                 "originCd": "NORTE",
-                "weightKg": 2.0,
-                "dimensionsCm": {
-                    "length": 10,
-                    "width": 10,
-                    "height": 10
-                }
+                "size": "S"
             }
         ]
     }
     response = client.post("/api/v1/shipments/quotes", json=payload)
     assert response.status_code == 200
     data = response.json()
-    # Volumetric weight = (10*10*10)/4000 = 0.25. Real weight = 2.0. Billable = 2.0.
-    # Cost = 3000 (base) + 500 * 2 = 4000
+    # Size S = 2.0kg. Cost = 3000 (base) + 500 * 2 = 4000
     assert data["totalShippingCost"]["amount"] == 4000
     assert data["totalShippingCost"]["currency"] == "CLP"
 
@@ -42,21 +36,15 @@ def test_quote_shipment_extrema():
         "packages": [
             {
                 "originCd": "NORTE",
-                "weightKg": 10.0,
-                "dimensionsCm": {
-                    "length": 50,
-                    "width": 50,
-                    "height": 50
-                }
+                "size": "XXL"
             }
         ]
     }
     response = client.post("/api/v1/shipments/quotes", json=payload)
     assert response.status_code == 200
     data = response.json()
-    # Volumetric weight = (50*50*50)/4000 = 125000/4000 = 31.25. Real weight = 10.0. Billable = 31.25.
-    # Cost = 8000 (base) + 1200 * 31.25 = 8000 + 37500 = 45500
-    assert data["totalShippingCost"]["amount"] == 45500
+    # Size XXL = 40.0kg. Cost = 8000 (base) + 1200 * 40 = 56000
+    assert data["totalShippingCost"]["amount"] == 56000
 
 def test_quote_validation_error():
     # Missing required field 'city'
@@ -64,19 +52,14 @@ def test_quote_validation_error():
         "packages": [
             {
                 "originCd": "NORTE",
-                "weightKg": 2.0,
-                "dimensionsCm": {
-                    "length": 10,
-                    "width": 10,
-                    "height": 10
-                }
+                "size": "S"
             }
         ]
     }
     response = client.post("/api/v1/shipments/quotes", json=payload)
-    assert response.status_code == 400
+    assert response.status_code == 422
     data = response.json()
-    assert data["code"] == "BAD_REQUEST"
+    assert data["code"] == "VALIDATION_ERROR"
 
 def test_openapi_is_up_to_date():
     import yaml

@@ -36,7 +36,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"city\": \"Temuco\",\n  \"packages\": [\n    {\n      \"originCd\": \"CENTRO\",\n      \"weightKg\": 2.5,\n      \"dimensionsCm\": {\n        \"length\": 10,\n        \"width\": 10,\n        \"height\": 10\n      }\n    },\n    {\n      \"originCd\": \"NORTE\",\n      \"weightKg\": 5.0,\n      \"dimensionsCm\": {\n        \"length\": 50,\n        \"width\": 50,\n        \"height\": 50\n      }\n    }\n  ]\n}"
+          "raw": "{\n  \"city\": \"Temuco\",\n  \"packages\": [\n    {\n      \"originCd\": \"CENTRO\",\n      \"size\": \"M\"\n    },\n    {\n      \"originCd\": \"NORTE\",\n      \"size\": \"XL\"\n    }\n  ]\n}"
         },
         "url": {
           "raw": "{{base_url}}/api/v1/shipments/quotes",
@@ -77,7 +77,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"orderId\": \"ORD-TEST-001\",\n  \"customerName\": \"Juan Perez\",\n  \"address\": \"Avenida Siempre Viva 123\",\n  \"city\": \"Santiago\",\n  \"packages\": [\n    {\n      \"originCd\": \"CENTRO\",\n      \"weightKg\": 2.5,\n      \"dimensionsCm\": {\n        \"length\": 10,\n        \"width\": 10,\n        \"height\": 10\n      }\n    }\n  ]\n}"
+          "raw": "{\n  \"orderId\": \"ORD-TEST-001\",\n  \"customerName\": \"Juan Perez\",\n  \"address\": \"Avenida Siempre Viva 123\",\n  \"city\": \"Santiago\",\n  \"packages\": [\n    {\n      \"originCd\": \"CENTRO\",\n      \"size\": \"M\"\n    }\n  ]\n}"
         },
         "url": {
           "raw": "{{base_url}}/api/v1/shipments",
