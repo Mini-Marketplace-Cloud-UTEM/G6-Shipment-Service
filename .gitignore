@@ -1,4 +1,4 @@
-﻿# Python bytecode
+# Python bytecode
 __pycache__/
 *.py[cod]
 *.class
@@ -30,3 +30,6 @@ env/
 # Secrets
 .env
 proyecto-arqui-g6-7b03afe3bc0f.json
+
+# Postman Collections
+tests/postman/collections/

@@ -256,7 +256,7 @@ async def create_shipment(request: Request, shipment_data: ShipmentCreate, db: S
                 "customerName": shipment_data.customer_name,
                 "address": shipment_data.address,
                 "city": shipment_data.city,
-                "weightKg": pkg.weight_kg,
+                "weightKg": billable_weight,
                 "status": ShipmentStatus.PENDING.value,
                 "estimatedDelivery": estimated.isoformat() if estimated else None,
                 "packageIndex": idx,
